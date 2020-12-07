@@ -122,13 +122,17 @@ def test(model, dataset):
 @tf.function
 def train(epoch, model, train_dataset, test_dataset):
     element_num = tf.data.experimental.cardinality(train_dataset)
+    start = tf.timestamp()
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
         # tf.print(i, element_num, len(data),"acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(),
         # "pre: ", model.metrics_precision.result(), "recall: ", model.metrics_recall.result(), "rmse: ", model.metrics_rmse.result(), 
         # "mae: ", model.metrics_mae.result(), "mse: ", model.metrics_mse.result())
         model.train_step(data, label)
         if tf.equal(tf.math.floormod(i, element_num), 0):
-            tf.print("epoch: ", tf.math.floordiv(i, element_num), "train loss: ", model.metrics_loss.result(), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(), end=", ")
+            end = tf.timestamp()
+            tf.print("epoch: ", tf.math.floordiv(i, element_num), "train loss: ", model.metrics_loss.result(), 
+            "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(), "costTime: ", end - start , end=", ")
+            start = end
             model.resetMetrics()
             test(model, test_dataset)
 
@@ -149,7 +153,7 @@ def runKDD():
     dropout = 0.01
     l2 = 0.01
     problem_embed_dim = 20
-    epoch = 1
+    epoch = 1000
     threshold = 0.5
 
     model_params = {}
@@ -191,14 +195,13 @@ def runKDD():
         train_dataset = train_dataset.take(1)
         test_dataset = test_dataset.take(1)
 
-    # train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
-    # model.save_trainable_weights(saveDir + "/dkt.model")
-    model.load_trainable_weights(saveDir + "/dkt.model")
+    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    model.save_trainable_weights(saveDir + "/dkt.model")
+    # model.load_trainable_weights(saveDir + "/dkt.model")
     results={'LC_params':LC_params,'model_params':model_params,'results':{}}
     temp = results['results']
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
     saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
-
     
 if __name__ == "__main__":
     runKDD()
