@@ -25,9 +25,9 @@ class DKT(tf.keras.Model):
 
         # metrics
         self.metrics_loss = tf.keras.metrics.BinaryCrossentropy()
-        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy(threshold=threshold)
-        self.metrics_precision = tf.keras.metrics.Precision(thresholds=threshold)
-        self.metrics_recall = tf.keras.metrics.Recall(thresholds=threshold)
+        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy(threshold = threshold)
+        self.metrics_precision = tf.keras.metrics.Precision(thresholds = threshold)
+        self.metrics_recall = tf.keras.metrics.Recall(thresholds = threshold)
         self.metrics_mse = tf.keras.metrics.MeanSquaredError()
         self.metrics_mae = tf.keras.metrics.MeanAbsoluteError()
         self.metrics_rmse = tf.keras.metrics.RootMeanSquaredError()
@@ -61,6 +61,7 @@ class DKT(tf.keras.Model):
         self.metrics_rmse.update_state(label, pred, mask)
         self.metrics_auc.update_state(label, pred, mask)
         self.metrics_auc_1000.update_state(label, pred, mask)
+
         return loss
 
     @tf.function(experimental_relax_shapes=True)
@@ -75,6 +76,18 @@ class DKT(tf.keras.Model):
             loss = self.loss_function(pred, label)
         grad = tape.gradient(loss, self.trainable_variables)
         self.opti.apply_gradients(zip(grad, self.trainable_variables))
+
+    def resetMetrics(self):
+        self.metrics_loss.reset_states()
+        self.metrics_accuracy.reset_states()
+        self.metrics_precision.reset_states()
+        self.metrics_recall.reset_states()
+        self.metrics_mse.reset_states()
+        self.metrics_mae.reset_states()
+        self.metrics_rmse.reset_states()
+        self.metrics_auc.reset_states()
+        self.metrics_auc_1000.reset_states()
+        return 
 
     def save_trainable_weights(self, save_path="./dkt.model"):
         data = tf.zeros(shape=self.data_shape)
@@ -104,26 +117,25 @@ def test(model, dataset):
     for data, label in dataset:
         model.metrics_step(data, label)
     tf.print("test loss: ", model.metrics_loss.result(), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result())
-    model.metrics_loss.reset_states()
-    model.metrics_accuracy.reset_states()
-    model.metrics_auc.reset_states()
+    model.resetMetrics()
 
 @tf.function
 def train(epoch, model, train_dataset, test_dataset):
     element_num = tf.data.experimental.cardinality(train_dataset)
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
-        tf.print(i, element_num, len(data))
+        # tf.print(i, element_num, len(data),"acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(),
+        # "pre: ", model.metrics_precision.result(), "recall: ", model.metrics_recall.result(), "rmse: ", model.metrics_rmse.result(), 
+        # "mae: ", model.metrics_mae.result(), "mse: ", model.metrics_mse.result())
         model.train_step(data, label)
         if tf.equal(tf.math.floormod(i, element_num), 0):
             tf.print("epoch: ", tf.math.floordiv(i, element_num), "train loss: ", model.metrics_loss.result(), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(), end=", ")
-            model.metrics_loss.reset_states()
-            model.metrics_accuracy.reset_states()
-            model.metrics_auc.reset_states()
+            model.resetMetrics()
             test(model, test_dataset)
 
 def get_last_epoch_data(model, dataset):
     all_pred = list()
     all_label = list()
+    model.resetMetrics()
     for data, label in dataset:
         pred = model.metrics_step(data, label)
     return model.metrics_accuracy.result(),model.metrics_precision.result(),model.metrics_recall.result(),model.metrics_mse.result(),model.metrics_mae.result(), model.metrics_rmse.result(), model.metrics_auc.result(), model.metrics_auc_1000.result()
@@ -157,7 +169,7 @@ def runKDD():
     #######################################
     userLC = [10,3000]
     problemLC = [10,5000]
-    #algebra08原始数据里的最值，可以注释，不要删
+    # algebra08原始数据里的最值，可以注释，不要删
     low_time = "2008-09-08 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
