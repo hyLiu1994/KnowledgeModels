@@ -11,7 +11,7 @@ from DataProcessor import _DataProcessor
 from public import *
 
 class DKT(tf.keras.Model):
-    def __init__(self, data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, **kwargs):
+    def __init__(self, data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, threshold, **kwargs):
         super(DKT, self).__init__(**kwargs)
         self.problem_num = problem_num
         self.data_shape = data_shape
@@ -25,12 +25,17 @@ class DKT(tf.keras.Model):
 
         # metrics
         self.metrics_loss = tf.keras.metrics.BinaryCrossentropy()
-        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy()
+        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy(threshold=threshold)
+        self.metrics_precision = tf.keras.metrics.Precision(thresholds=threshold)
+        self.metrics_recall = tf.keras.metrics.Recall(thresholds=threshold)
+        self.metrics_mse = tf.keras.metrics.MeanSquaredError()
+        self.metrics_mae = tf.keras.metrics.MeanAbsoluteError()
+        self.metrics_rmse = tf.keras.metrics.RootMeanSquaredError()
         self.metrics_auc = tf.keras.metrics.AUC()
+        self.metrics_auc_1000 = tf.keras.metrics.AUC(num_thresholds=1000)
 
     def call(self, inputs):
         problem_embed = self.problem_embedding(inputs)
-        print (problem_embed.shape)
         hidden = self.lstm(problem_embed)
         pred = self.dense(hidden)
         return pred
@@ -46,9 +51,16 @@ class DKT(tf.keras.Model):
         pred = tf.squeeze(pred, axis=-1)
         float_mask = tf.cast(mask, dtype=tf.float32)
         loss = self.loss_obj(label, pred, float_mask)
-        self.metrics_accuracy.update_state(label, pred, mask)
+        # metrics
         self.metrics_loss.update_state(label, pred, mask)
+        self.metrics_accuracy.update_state(label, pred, mask)
+        self.metrics_precision.update_state(label, pred, mask)
+        self.metrics_recall.update_state(label, pred, mask)
+        self.metrics_mse.update_state(label, pred, mask)
+        self.metrics_mae.update_state(label, pred, mask)
+        self.metrics_rmse.update_state(label, pred, mask)
         self.metrics_auc.update_state(label, pred, mask)
+        self.metrics_auc_1000.update_state(label, pred, mask)
         return loss
 
     @tf.function(experimental_relax_shapes=True)
@@ -56,7 +68,7 @@ class DKT(tf.keras.Model):
         pred = self(data)
         self.loss_function(pred, label)
    
-    # @tf.function(experimental_relax_shapes=True)
+    @tf.function(experimental_relax_shapes=True)
     def train_step(self, data, label):
         with tf.GradientTape() as tape:
             pred = self(data)
@@ -100,6 +112,7 @@ def test(model, dataset):
 def train(epoch, model, train_dataset, test_dataset):
     element_num = tf.data.experimental.cardinality(train_dataset)
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
+        tf.print(i, element_num, len(data))
         model.train_step(data, label)
         if tf.equal(tf.math.floormod(i, element_num), 0):
             tf.print("epoch: ", tf.math.floordiv(i, element_num), "train loss: ", model.metrics_loss.result(), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(), end=", ")
@@ -124,7 +137,7 @@ def runKDD():
     dropout = 0.01
     l2 = 0.01
     problem_embed_dim = 20
-    epoch = 1000
+    epoch = 1
     threshold = 0.5
 
     model_params = {}
@@ -137,7 +150,7 @@ def runKDD():
     model_params['epoch'] = epoch
     model_params['threshold'] = threshold
 
-    batch_size = 128
+    batch_size = 256
 
     #######################################
     # LC parameters
@@ -156,15 +169,19 @@ def runKDD():
     LC_params = a.LC_params
 
     [train_dataset, test_dataset, problem_num] = a.loadDKTbatchData(trainRate, batch_size)
-    print (lstm_units, dropout, l2, problem_embed_dim, epoch, problem_num, threshold)
-    model = DKT(lstm_units, dropout, l2, problem_embed_dim, epoch, problem_num, threshold)
 
-    is_test = True
+    data_shape = [data for data, label in train_dataset.take(1)][0].shape
+    model = DKT(data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, threshold)
+
+    is_test = False
     if is_test:
-        train_dataset = train_dataset.take(10)
-        test_dataset = test_dataset.take(8)
+        print ("测试运行DKT")
+        train_dataset = train_dataset.take(1)
+        test_dataset = test_dataset.take(1)
 
-    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    # train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    # model.save_trainable_weights(saveDir + "/dkt.model")
+    model.load_trainable_weights(saveDir + "/dkt.model")
     results={'LC_params':LC_params,'model_params':model_params,'results':{}}
     temp = results['results']
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
