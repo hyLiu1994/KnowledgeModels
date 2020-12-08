@@ -9,6 +9,7 @@ from collections import defaultdict, Counter
 from sklearn.model_selection import KFold
 from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
+from OJDataProcessor import _OJDataProcessor
 
 class _DataProcessor:
     # minTimestamp必须传值，默认值不管用
@@ -16,7 +17,7 @@ class _DataProcessor:
         if dataType=='kdd':
             self.dataprocessor= _KDDCupDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
         elif dataType=='oj':
-            self.dataprocessor= _OJDataProcessor(userLC, problemLC, timeLC)
+            self.dataprocessor= _OJDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
 
         self.datasetName= self.dataprocessor.datasetName
         self.TmpDir = self.dataprocessor.TmpDir
@@ -152,8 +153,8 @@ class _DataProcessor:
                 for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
                     for skill_id in dict_q_mat[item_id]:
                         attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
-                        print(attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS])
-                        print(l, skill_id*NB_OF_TIME_WINDOWS,(skill_id+1)*NB_OF_TIME_WINDOWS)
+                        #print(attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS])
+                        #print(l, skill_id*NB_OF_TIME_WINDOWS,(skill_id+1)*NB_OF_TIME_WINDOWS)
                         lastT = q[stud_id, skill_id].get_last()
                         lasttimes[l, skill_id] = lastT
                         deltaT[l, skill_id] = t-lastT
@@ -167,14 +168,18 @@ class _DataProcessor:
         return sparse_df
 
 
+
+
+
+# oj
 '''
-userLC = [10,100]
-problemLC = [10,100]
-#algebra08原始数据里的最值，可以注释，不要删
-low_time = '2008-09-08 14:46:48'
-high_time = '2009-07-06 18:02:12'
+userLC = [10,500,0.1,1]
+problemLC = [10,500,0,1]
+#hdu原始数据里的最值，可以注释，不要删
+low_time = "2018-06-01 00:00:00" 
+high_time = "2018-11-29 00:00:00"
 timeLC = [low_time, high_time]
-a = _DataProcessor(userLC, problemLC, timeLC, 'kdd')
+a = _DataProcessor(userLC, problemLC, timeLC, 'oj')
 print('**************LC_params**************')
 printDict(a.LC_params)
 features = ['skills', 'attempts']
@@ -185,7 +190,9 @@ print('**************sparse_df**************')
 print(sparse_df.shape)
 sparse_df = pd.DataFrame(sparse_df).head(1000)
 sparse_df.to_csv(os.path.join(a.LCDataDir,'test.txt'), sep='\t', index=False)
+'''
 
+'''
 [df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 print('**************StaticInformation**************')
 printDict(StaticInformation)
@@ -197,6 +204,7 @@ print('**************dataset**************')
 print(type(train))
 print(type(test))
 '''
+
 
 
 

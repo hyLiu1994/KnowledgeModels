@@ -15,8 +15,8 @@ from public import *
 # coding = utf-8
 
 class _OJDataProcessor(object):
-    def __init__(self, userLC, problemLC, timeLC, OnlyRight = True, drop_duplicates = True, datasetName = 'hdu'):
-        self.datasetName= 'hdu'
+    def __init__(self, userLC, problemLC, timeLC, OnlyRight = True, drop_duplicates = True, datasetName = 'hdu',  TmpDir = "./data/"):
+        self.datasetName = datasetName
 
         #hduOJ专用数据预处理
         #userLC = [最少提交次数，最多提交次数，最低通过率，最高通过率]
@@ -24,8 +24,6 @@ class _OJDataProcessor(object):
         #timeLC = [起始时间（单位秒），终止时间（秒）]
         # 当OnlyRight为真的时候，只考虑Accepted，其它所有情况划分为一类，等OnlyRight为假的时候
         # 分为这几种情况dic_status = {'Accepted': 1, 'Wrong Answer': 0, 'Time Limit Exceeded': 2, 'other': 3}
-        #根据限制条件过滤数据
-        #最终要获得userId-userName,problemId-ProblemRawId四个字典，要保证存在在字典中的每一个题目与用户都是满足限制条件的，以及满足限制条件的提交记录。
     
         self.LC_params={}
         self.LC_params['userLC'] = userLC
@@ -34,7 +32,7 @@ class _OJDataProcessor(object):
         self.LC_params['Right'] = OnlyRight
         self.LC_params['dropDup'] = drop_duplicates
 
-        self.TmpDir = 'data'
+        self.TmpDir =  TmpDir
         self.RawDataDir = os.path.join(self.TmpDir, 'rawData', self.datasetName)
         self.RawDataName = 'hdu_RawSubmitRecord.txt'
         self.RawKnowledge2Problem = 'hdu_RawKnowledge2Problem.txt'
@@ -168,9 +166,11 @@ class _OJDataProcessor(object):
         return df, QMatrix, StaticInformation, DictList
 
 
+'''
 #用户条件限制[最少做题数，最多做题数，最小通过率，最大通过率]
 userLC = [10,500,0.1,1]
 problemLC = [10,500,0,1]
+#hdu原始数据里的最值，可以注释，不要删
 low_time = "2018-06-01 00:00:00" 
 high_time = "2018-11-29 00:00:00"
 timeLC = [low_time, high_time]
@@ -179,12 +179,9 @@ start = time.time()
 [df, QMatrix, StaticInformation, DictList] = a.loadLCData()
 end = time.time()
 print("cost time: ", end - start)
-'''
-for item in DictList:
-    printDict(item)
-'''
 print('**************QMatrix**************')
 print(QMatrix.shape)
 print('**************StaticInformation**************')
 printDict(StaticInformation)
+'''
 
