@@ -22,8 +22,9 @@ class NpEncoder(json.JSONEncoder):
 
 def saveDict(dictionary,folder,data_name):
     folder_path = os.path.join(str(folder), str(data_name))
+    #folder_path = folder + '/' + data_name
     string=json.dumps(dictionary,indent=2,cls=NpEncoder)
-    with open(folder_path,'w')as f:
+    with open(folder_path,'w') as f:
         f.write(string)
     f.close()
 
@@ -73,12 +74,12 @@ def transferStrT2Dir(timeLC):
     return [a.replace(':','-'), b.replace(':','-')]
 
 
-def getLegend(params):
+def getLegend(params, keyNumLimit = 1):
     """Create save legend from params dictionary"""
     legend = ''
     for key,value in params.items():
         if isinstance(value, list):
-            legend = legend + '_' + key + '_['
+            legend = legend + '_' + key[0:keyNumLimit].upper() + '_['
             flag = 0
             for item in value:
                 if item == 1e9:
@@ -94,7 +95,7 @@ def getLegend(params):
                 flag += 1 
             legend = legend + ']'
         else:
-            legend=legend+'_'+key+'_'+str(value)
+            legend=legend+'_'+key[0:keyNumLimit].upper()+'_'+str(value)
 
     return legend
 
