@@ -161,7 +161,6 @@ class _DataProcessor:
                 X['attempts'] = sparse.vstack([X['attempts'],sparse.csr_matrix(attempts)])
                 X['lasttimes'] = sparse.vstack([X['lasttimes'],sparse.csr_matrix(lasttimes)])
                 X['deltaT'] = sparse.vstack([X['deltaT'],sparse.csr_matrix(deltaT)])
-            break
 
         sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
         sparse.save_npz(os.path.join(self.LCDataDir, 'sparse_df'+str(window_lengths)+'.npz'), sparse_df)
