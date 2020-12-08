@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-sys.path.append("./DataProcessor/")
-import tensorflow as tf
 import os
+import sys
 import pickle
+import tensorflow as tf 
 from tensorflow.keras import layers
-from DataProcessor import _DataProcessor
+
+sys.path.append("./DataProcessor/")
+os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+
 from public import *
+from DataProcessor import _DataProcessor
+
 
 class DKT(tf.keras.Model):
     def __init__(self, data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, threshold, **kwargs):
@@ -153,7 +157,7 @@ def runKDD():
     dropout = 0.01
     l2 = 0.01
     problem_embed_dim = 20
-    epoch = 1000
+    epoch = 1
     threshold = 0.5
 
     model_params = {}
@@ -166,7 +170,7 @@ def runKDD():
     model_params['epoch'] = epoch
     model_params['threshold'] = threshold
 
-    batch_size = 256
+    batch_size = 32
 
     #######################################
     # LC parameters
@@ -177,7 +181,7 @@ def runKDD():
     low_time = "2008-09-08 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
-    a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data/")
+    a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = ".\\data\\")
 
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'dkt')
@@ -195,15 +199,73 @@ def runKDD():
         train_dataset = train_dataset.take(1)
         test_dataset = test_dataset.take(1)
 
-    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    # train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
     model.save_trainable_weights(saveDir + "/dkt.model")
     # model.load_trainable_weights(saveDir + "/dkt.model")
     results={'LC_params':LC_params,'model_params':model_params,'results':{}}
     temp = results['results']
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
     saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
+
+def runOJ():
+    #######################################
+    # model parameters
+    #######################################
+    trainRate = 0.8
+    lstm_units = 40
+    dropout = 0.01
+    l2 = 0.01
+    problem_embed_dim = 20
+    epoch = 1
+    threshold = 0.5
+
+    model_params = {}
+    model_params['trainRate'] = trainRate
+
+    model_params['lstm_units'] = lstm_units
+    model_params['dropout'] = dropout
+    model_params['l2'] = l2
+    model_params['problem_embed_dim'] = problem_embed_dim
+    model_params['epoch'] = epoch
+    model_params['threshold'] = threshold
+
+    batch_size = 32
+
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [10,500,0.1,1]
+    problemLC = [10,500,0,1]
+    #hdu原始数据里的最值，可以注释，不要删
+    low_time = "2018-06-01 00:00:00" 
+    high_time = "2018-11-29 00:00:00"
+    timeLC = [low_time, high_time]
+    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "data")
+
+    LCDataDir = a.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'dkt')
+    prepareFolder(saveDir)
+    LC_params = a.LC_params
+
+    [train_dataset, test_dataset, problem_num] = a.loadDKTbatchData(trainRate, batch_size)
+    print(train_dataset)
+    print(test_dataset)
+    model = DKT(lstm_units, dropout, l2, problem_embed_dim, epoch, problem_num, threshold)
+
+    
+    is_test = False
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    results={'LC_params':LC_params,'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
+    saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
+
     
 if __name__ == "__main__":
-    runKDD()
+    runOJ()
 
 
