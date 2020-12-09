@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 sys.path.append("./DataProcessor/")
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+# os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 from public import *
 from DataProcessor import _DataProcessor
@@ -199,9 +199,8 @@ def runKDD():
         train_dataset = train_dataset.take(1)
         test_dataset = test_dataset.take(1)
 
-    # train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
     model.save_trainable_weights(saveDir + "/dkt.model")
-    # model.load_trainable_weights(saveDir + "/dkt.model")
     results={'LC_params':LC_params,'model_params':model_params,'results':{}}
     temp = results['results']
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
@@ -240,7 +239,7 @@ def runOJ():
     low_time = "2018-06-01 00:00:00" 
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
-    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "data")
+    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = ".\\data\\")
 
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'dkt')
@@ -248,21 +247,23 @@ def runOJ():
     LC_params = a.LC_params
 
     [train_dataset, test_dataset, problem_num] = a.loadDKTbatchData(trainRate, batch_size)
-    print(train_dataset)
-    print(test_dataset)
-    model = DKT(lstm_units, dropout, l2, problem_embed_dim, epoch, problem_num, threshold)
 
-    
+    data_shape = [data for data, label in train_dataset.take(1)][0].shape
+    model = DKT(data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, threshold)
+
     is_test = False
     if is_test:
-        train_dataset = train_dataset.take(10)
-        test_dataset = test_dataset.take(8)
+        print ("测试运行DKT")
+        train_dataset = train_dataset.take(1)
+        test_dataset = test_dataset.take(1)
 
     train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    model.save_trainable_weights(saveDir + "/dkt.model")
     results={'LC_params':LC_params,'model_params':model_params,'results':{}}
     temp = results['results']
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
     saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
+
 
     
 if __name__ == "__main__":
