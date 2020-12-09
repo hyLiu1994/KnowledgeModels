@@ -10,14 +10,17 @@ from sklearn.model_selection import KFold
 from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
 from OJDataProcessor import _OJDataProcessor
+from AssistDataProcessor import _AssistDataProcessor
 
 class _DataProcessor:
     # minTimestamp必须传值，默认值不管用
     def __init__(self, userLC, problemLC, timeLC, dataType = 'kdd', TmpDir = './data/'):
-        if dataType=='kdd':
+        if dataType == 'kdd':
             self.dataprocessor= _KDDCupDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
-        elif dataType=='oj':
+        elif dataType == 'oj':
             self.dataprocessor= _OJDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
+        elif dataType == 'assist':
+            self.dataprocessor= _AssistDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
 
         self.datasetName= self.dataprocessor.datasetName
         self.TmpDir = self.dataprocessor.TmpDir
@@ -171,15 +174,16 @@ class _DataProcessor:
 
 
 
-# oj
+# assistments12
 '''
-userLC = [10,500,0.1,1]
-problemLC = [10,500,0,1]
-#hdu原始数据里的最值，可以注释，不要删
-low_time = "2018-06-01 00:00:00" 
-high_time = "2018-11-29 00:00:00"
+userLC = [10,20]
+problemLC = [10,20]
+#assistments12原始数据里的最值，可以注释，不要删
+low_time = "2012-09-01 00:00:00"
+high_time = "2013-09-01 00:00:00"
 timeLC = [low_time, high_time]
-a = _DataProcessor(userLC, problemLC, timeLC, 'oj')
+
+a = _DataProcessor(userLC, problemLC, timeLC, 'assit', TmpDir = "../data")
 print('**************LC_params**************')
 printDict(a.LC_params)
 features = ['skills', 'attempts']
