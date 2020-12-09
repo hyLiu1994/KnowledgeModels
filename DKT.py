@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 sys.path.append("./DataProcessor/")
-os.environ["CUDA_VISIBLE_DEVICES"]="-1"
+# os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 
 from public import *
 from DataProcessor import _DataProcessor
