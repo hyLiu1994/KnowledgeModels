@@ -39,6 +39,7 @@ class DKT(tf.keras.Model):
         self.metrics_auc_1000 = tf.keras.metrics.AUC(num_thresholds=1000)
 
     def call(self, inputs):
+        
         problem_embed = self.problem_embedding(inputs)
         hidden = self.lstm(problem_embed)
         pred = self.dense(hidden)
@@ -248,9 +249,8 @@ def runOJ():
     LC_params = a.LC_params
 
     [train_dataset, test_dataset, problem_num] = a.loadDKTbatchData(trainRate, batch_size)
-    print(train_dataset)
-    print(test_dataset)
-    model = DKT(lstm_units, dropout, l2, problem_embed_dim, epoch, problem_num, threshold)
+    data_shape = [data for data, label in train_dataset.take(1)][0].shape
+    model = DKT(data_shape, lstm_units, dropout, l2, problem_embed_dim, problem_num, threshold)
 
     
     is_test = False
@@ -266,6 +266,7 @@ def runOJ():
 
     
 if __name__ == "__main__":
+    tf.config.run_functions_eagerly(True)
     runOJ()
 
 
