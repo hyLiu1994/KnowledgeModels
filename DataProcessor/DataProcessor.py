@@ -106,9 +106,11 @@ class _DataProcessor:
     # all_features = ['lasttimes', 'skills', 'attempts', 'wins']
     # wins没写呢
     def loadSparseDF(self, active_features = ['lasttimes', 'skills', 'attempts'], window_lengths = [3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]):
-        if os.path.exists(os.path.join(self.LCDataDir, 'sparse_df.npz')):
-            sparse_df = sparse.csr_matrix(sparse.load_npz('sparse_df.npz'))
+        if os.path.exists(os.path.join(self.LCDataDir, 'sparse_df'+str(window_lengths)+'.npz')):
+            print ("存在现有的 SparseDF, 直接读取")
+            sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(self.LCDataDir, 'sparse_df'+str(window_lengths)+'.npz')))
             return sparse_df
+        print ("不存在现有的 SparseDF, 重新生成")
 
         [df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 
