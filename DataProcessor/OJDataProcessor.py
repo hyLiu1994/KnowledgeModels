@@ -65,7 +65,7 @@ class _OJDataProcessor(object):
             userInformation = loadDict(self.LCDataDir,'userInformation.json')
             itemInformation = loadDict(self.LCDataDir,'itemInformation.json')
             knowledgeInformation = loadDict(self.LCDataDir,'knowledgeInformation.json')
-            DictList = [userInformation, knowledgeInformation]
+            DictList = [userInformation, itemInformation, knowledgeInformation]
             return df, QMatrix, StaticInformation, DictList
 
         prepareFolder(self.LCDataDir)
