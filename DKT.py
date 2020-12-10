@@ -39,6 +39,7 @@ class DKT(tf.keras.Model):
         self.metrics_auc_1000 = tf.keras.metrics.AUC(num_thresholds=1000)
 
     def call(self, inputs):
+        
         problem_embed = self.problem_embedding(inputs)
         hidden = self.lstm(problem_embed)
         pred = self.dense(hidden)
