@@ -11,6 +11,7 @@ from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
 from OJDataProcessor import _OJDataProcessor
 from AssistDataProcessor import _AssistDataProcessor
+from MathDataProcessor import _MathDataProcessor
 
 class _DataProcessor:
     # minTimestamp必须传值，默认值不管用
@@ -21,6 +22,8 @@ class _DataProcessor:
             self.dataprocessor= _OJDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
         elif dataType == 'assist':
             self.dataprocessor= _AssistDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
+        elif dataType == 'math':
+            self.dataprocessor= _MathDataProcessor(TmpDir = TmpDir)
 
         self.datasetName= self.dataprocessor.datasetName
         self.TmpDir = self.dataprocessor.TmpDir
@@ -268,6 +271,15 @@ printDict(SplitInfo[list(SplitInfo.keys())[0]])
 print('**************dataset**************')
 print(type(train))
 print(type(test))
+'''
+'''
+userLC = []
+problemLC = []
+timeLC = []
+
+a = _DataProcessor(userLC, problemLC, timeLC, 'math', TmpDir = "../data")
+print('**************LC_params**************')
+printDict(a.LC_params)
 '''
 
 
