@@ -33,7 +33,6 @@ class _OJDataProcessor(object):
         self.LC_params['dropDup'] = drop_duplicates
 
         self.TmpDir = TmpDir
-        # self.TmpDir = os.path.join(os.path.dirname(__file__), TmpDir)
         self.RawDataDir = os.path.join(self.TmpDir, 'rawData', self.datasetName)
         self.RawDataName = 'hdu_RawSubmitRecord.txt'
         self.RawKnowledge2Problem = 'hdu_RawKnowledge2Problem.txt'
@@ -185,4 +184,3 @@ print(QMatrix.shape)
 print('**************StaticInformation**************')
 printDict(StaticInformation)
 '''
-

@@ -282,7 +282,3 @@ a = _DataProcessor(userLC, problemLC, timeLC, 'math', TmpDir = "../data")
 print('**************LC_params**************')
 printDict(a.LC_params)
 '''
-
-
-
-

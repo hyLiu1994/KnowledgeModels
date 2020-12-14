@@ -147,7 +147,3 @@ printDict(a.LC_params)
 print('**************StaticInformation**************')
 printDict(StaticInformation)
 '''
-
-
-
-
