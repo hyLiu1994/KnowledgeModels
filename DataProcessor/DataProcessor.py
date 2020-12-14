@@ -168,6 +168,7 @@ class _DataProcessor:
         train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
         test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
         return train_dataset, test_dataset, item_num
+    
     # all_features = ['lasttimes', 'skills', 'attempts', 'wins']
     # wins没写呢
     def loadSparseDF(self, active_features = ['lasttimes', 'skills', 'attempts'], window_lengths = [3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]):

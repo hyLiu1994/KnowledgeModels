@@ -199,25 +199,82 @@ def train(epoch, model, train_dataset, test_dataset):
             start = tf.timestamp()
 
 
+def runKDD():
+    #######################################
+    # model parameters
+    #######################################
+    trainRate = 0.8
+    
+    m_N = 40
+    mk_dim = 60
+    mv_dim = 60
+
+    epoch = 1
+    threshold = 0.5
+
+    model_params = {}
+    model_params['trainRate'] = trainRate
+
+    model_params['m_N'] = m_N
+    model_params['mk_dim'] = mk_dim
+    model_params['mv_dim'] = mv_dim
+    model_params['epoch'] = epoch
+    model_params['threshold'] = threshold
+
+    batch_size = 32
+
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [10,3000]
+    problemLC = [10,5000]
+    # algebra08原始数据里的最值，可以注释，不要删
+    low_time = "2008-09-08 14:46:48"
+    high_time = "2009-01-01 00:00:00"
+    timeLC = [low_time, high_time]
+    a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./data")
+
+    LCDataDir = a.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'dkt')
+    prepareFolder(saveDir)
+    LC_params = a.LC_params
+
+    [train_dataset, test_dataset, problem_num] = a.loadDKVMNbatchData(trainRate, batch_size)
+    m_N = 40
+    mk_dim = 60
+    mv_dim = 60
+    data_shape = [data for data, label in train_dataset][0].shape
+    model = DKVMN(data_shape=data_shape, problem_num=problem_num, m_N=m_N, mk_dim=mk_dim, mv_dim=mv_dim, threshold=threshold)
+    is_test = False
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    results={'LC_params':LC_params,'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
+    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
+
 def runOJ():
     #######################################
     # model parameters
     #######################################
     trainRate = 0.8
-    lstm_units = 40
-    dropout = 0.01
-    l2 = 0.01
-    problem_embed_dim = 20
+
+    m_N = 40
+    mk_dim = 60
+    mv_dim = 60
+
     epoch = 4
     threshold = 0.5
 
     model_params = {}
     model_params['trainRate'] = trainRate
 
-    model_params['lstm_units'] = lstm_units
-    model_params['dropout'] = dropout
-    model_params['l2'] = l2
-    model_params['problem_embed_dim'] = problem_embed_dim
+    model_params['m_N'] = m_N
+    model_params['mk_dim'] = mk_dim
+    model_params['mv_dim'] = mv_dim
     model_params['epoch'] = epoch
     model_params['threshold'] = threshold
 
@@ -232,10 +289,64 @@ def runOJ():
     low_time = "2018-11-22 00:00:00" 
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
-    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "data")
+    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./data")
 
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'dkvmn')
+    prepareFolder(saveDir)
+    LC_params = a.LC_params
+
+    [train_dataset, test_dataset, problem_num] = a.loadDKVMNbatchData(trainRate, batch_size)
+    data_shape = [data for data, label in train_dataset][0].shape
+    model = DKVMN(data_shape=data_shape, problem_num=problem_num, m_N=m_N, mk_dim=mk_dim, mv_dim=mv_dim, threshold=threshold)
+    is_test = False
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    train(epoch=epoch, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+    results={'LC_params':LC_params,'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
+    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
+
+def runAssist():
+    #######################################
+    # model parameters
+    #######################################
+    trainRate = 0.8
+    
+    m_N = 40
+    mk_dim = 60
+    mv_dim = 60
+
+    epoch = 1
+    threshold = 0.5
+
+    model_params = {}
+    model_params['trainRate'] = trainRate
+
+    model_params['m_N'] = m_N
+    model_params['mk_dim'] = mk_dim
+    model_params['mv_dim'] = mv_dim
+    model_params['epoch'] = epoch
+    model_params['threshold'] = threshold
+
+    batch_size = 32
+
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [10,20]
+    problemLC = [10,20]
+    #assistments12原始数据里的最值，可以注释，不要删
+    low_time = "2012-09-01 00:00:00"
+    high_time = "2013-09-01 00:00:00"
+    timeLC = [low_time, high_time]
+    a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = "./data")
+
+    LCDataDir = a.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'dkt')
     prepareFolder(saveDir)
     LC_params = a.LC_params
 
@@ -259,6 +370,6 @@ def runOJ():
     
 if __name__ == "__main__":
     tf.config.run_functions_eagerly(True)
-    runOJ()
+    runKDD()
 
 
