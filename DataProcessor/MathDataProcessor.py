@@ -110,7 +110,7 @@ class _MathDataProcessor(object):
 		return df, QMatrix, StaticInformation, DictList
 
 
-
+'''
 a = _MathDataProcessor(TmpDir = "../data")
 start = time.time()
 [df, QMatrix, StaticInformation, DictList] = a.loadLCData()
@@ -120,5 +120,6 @@ print('**************QMatrix**************')
 print(QMatrix.shape)
 print('**************StaticInformation**************')
 printDict(StaticInformation)
+'''
 
 
