@@ -192,7 +192,7 @@ def train(epoch, model, train_dataset, test_dataset):
                      "train loss: ", model.metrics_loss.result(),
                      "acc: ", model.metrics_accuracy.result(),
                      "auc: ", model.metrics_auc.result(),
-                     "time: ", end - start, end=",")
+                     "time: " , end - start, end=",")
             model.resetMetrics()
             test(model, test_dataset)
 
