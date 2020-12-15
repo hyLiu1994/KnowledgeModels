@@ -99,6 +99,16 @@ def getLegend(params, keyNumLimit = 1):
 
     return legend
 
+def getFeaturesSuffix(features):
+    """Create save legend from params dictionary"""
+    legend = ''
+    for feature in features:
+        words = feature.split('_')
+        for word in words:
+            legend = legend + str(word[0])
+    return legend
+
+
 def save_as_pkl(save_path, data):
     fw = open(save_path, "wb")
     pickle.dump(data, fw)
