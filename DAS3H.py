@@ -79,7 +79,7 @@ def runOJ():
 	high_time = "2018-11-29 00:00:00"
 	timeLC = [low_time, high_time]
 
-	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./data")
+	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
 	LC_params = a.LC_params
 
 	prefix = ''
@@ -101,16 +101,16 @@ def runOJ():
 	LCDataDir = a.LCDataDir
 	saveDir = os.path.join(LCDataDir, 'das3h', prefix)
 	prepareFolder(saveDir)
-	#for run_id in range(model_params['kFold']):
-	#   prepareFolder(os.path.join(saveDir, str(run_id)))
-	X = a.loadSparseDF(active, window_lengths)
+	for run_id in range(model_params['kFold']):
+	   prepareFolder(os.path.join(saveDir, str(run_id)))
+	X, Length = a.loadSparseDF(active, window_lengths)
 	y = X[:,3].toarray().flatten()
 
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	dict_data = a.loadSplitInfo(model_params['kFold'])
 
 	results={'LC_params':LC_params,'model_params':model_params,'FM_params':FM_params,'results':{}}
-	metrics = {'tf_Accuracy':tf.keras.metrics.Accuracy(),
+	metrics_tf = {'tf_Accuracy':tf.keras.metrics.Accuracy(),
 				'tf_Precision':tf.keras.metrics.Precision(thresholds=model_params['threshold']),
 				'tf_Recall':tf.keras.metrics.Recall(thresholds=model_params['threshold']),
 			   'tf_MSE':tf.keras.metrics.MeanSquaredError(),
@@ -139,12 +139,12 @@ def runOJ():
 			fm = pywFM.FM(**FM_params)
 			model = fm.run(X_train[:,4:], y_train, X_test[:,4:], y_test)
 			y_pred_test = np.array(model.predictions)
-			model.rlog.to_csv(os.path.join(EXPERIMENT_FOLDER, str(run_id), 'rlog.csv'))
+			model.rlog.to_csv(os.path.join(saveDir, str(run_id), 'rlog.csv'))
 
 		results['results'][run_id] = {}
 		temp = results['results'][run_id]
 
-		for metric in metrics:
+		for metric in metrics_tf:
 			m = metrics[metric]
 			m.reset_states()
 			m.update_state(y_test, y_pred_test)

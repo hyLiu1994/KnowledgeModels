@@ -190,6 +190,7 @@ class _DataProcessor:
 		if os.path.exists(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))):
 			print ("存在现有的SparseFeatures, 直接读取")
 			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))))
+			Length = loadDict(SaveDir,'Length-{:s}.json'.format(features_suffix))
 			return sparse_df, Length
 		print ("不存在现有的SparseFeatures, 重新生成")
 		prepareFolder(SaveDir)
@@ -316,7 +317,7 @@ class _DataProcessor:
 		saveDict(Length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
 		return sparse_df, Length
 
-
+'''
 userLC = [10,500,0.1,1]
 problemLC = [10,500,0,1]
 #hdu原始数据里的最值，可以注释，不要删
@@ -355,7 +356,7 @@ print(sparse_df.shape)
 printDict(Length)
 print('**************statics**************')
 printDict(a.dataprocessor.LC_params)
-
+'''
 
 
 
