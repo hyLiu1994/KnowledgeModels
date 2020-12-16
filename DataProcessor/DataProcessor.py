@@ -207,14 +207,12 @@ class _DataProcessor:
 		Length = {}
 		X['df'] = np.empty((0,4)) # Keep track of the original dataset
 
-		if 'skills' in active_features:
-			X["skills"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
-			Length["skills"] = QMatrix.shape[1]
+		X["skills"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		Length["skills"] = QMatrix.shape[1]
 		if 'lasttime_0kcsingle' in active_features:
 			a = 1
-		if 'lasttime_1kc' in active_features:
-			X["lasttime_1kc"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
-			Length["lasttime_1kc"] = QMatrix.shape[1]
+		X["lasttime_1kc"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		Length["lasttime_1kc"] = QMatrix.shape[1]
 		if 'lasttime_2items' in active_features:
 			a = 1
 		if 'lasttime_3sequence' in active_features:
@@ -233,9 +231,8 @@ class _DataProcessor:
 			a = 1
 		if 'wins_1kc' in active_features:
 			a = 1
-		if 'attempts_1kc' in active_features:
-			X['attempts_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
-			Length["attempts_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
+		X['attempts_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
+		Length["attempts_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
 		if 'attempts_2items' in active_features:
 			a = 1
 		if 'attempts_3das3h' in active_features:
@@ -244,7 +241,7 @@ class _DataProcessor:
 			a = 1
 		if 'attempts_5das3hitems' in active_features:
 			a = 1
-
+ 
 		q = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
 		q2 = defaultdict(lambda: OurQueue(window_lengths))  # item_related
 
@@ -272,10 +269,11 @@ class _DataProcessor:
 				if l != 0:
 					lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
 					attempts_1kc[l, :] = attempts_1kc[l-1, :]
-					for skill_id in dict_q_mat[item_id]:
-						lasttime_1kc[l, skill_id] = q[stud_id, skill_id].get_last()
-						attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
-						q[stu_id, skill_id].push(t)
+				for skill_id in dict_q_mat[item_id]:
+					lasttime_1kc[l, skill_id] = q[stud_id, skill_id].get_last()
+					attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
+					q[stud_id, skill_id].push(t)
+			
 			X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
 			X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 
