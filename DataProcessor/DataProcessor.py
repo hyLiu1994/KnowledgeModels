@@ -195,6 +195,7 @@ class _DataProcessor:
 		prepareFolder(SaveDir)
 
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
+		QMatrix = QMatrix.toarray()
 
 		NB_OF_TIME_WINDOWS = len(window_lengths)
 
@@ -209,41 +210,57 @@ class _DataProcessor:
 
 		X["skills"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
 		Length["skills"] = QMatrix.shape[1]
+
 		if 'lasttime_0kcsingle' in active_features:
-			a = 1
+			X['lasttime_0kcsingle'] = sparse.csr_matrix(np.empty((0, 1)))
+			Length["lasttime_0kcsingle"] = 1
+
 		X["lasttime_1kc"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
 		Length["lasttime_1kc"] = QMatrix.shape[1]
-		if 'lasttime_2items' in active_features:
-			a = 1
-		if 'lasttime_3sequence' in active_features:
-			a = 1
-		if 'wins_1kc' in active_features:
-			a = 1
-		if 'wins_2items' in active_features:
-			a = 1
-		if 'wins_3das3h' in active_features:
-			a = 1
-		if 'wins_4das3hkc' in active_features:
-			a = 1
-		if 'wins_5das3hitems' in active_features:
-			a = 1
-		if 'fails' in active_features:
-			a = 1
-		if 'wins_1kc' in active_features:
-			a = 1
+
+
+		X['lasttime_2items'] = sparse.csr_matrix(np.empty((0, 1)))
+		Length["lasttime_2items"] = 1
+
+		X['lasttime_3sequence'] = sparse.csr_matrix(np.empty((0, 1)))
+		Length["lasttime_3sequence"] = 1
+
+		X['wins_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
+		Length["wins_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
+		
+		X['wins_2items'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+		Length["wins_2items"] = NB_OF_TIME_WINDOWS
+
+		X['wins_3das3h'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		Length["wins_3das3h"] = QMatrix.shape[1]
+
+		X['wins_4das3hkc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
+		Length["wins_4das3hkc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
+
+		X['wins_5das3hitems'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+		Length["wins_5das3hitems"] = NB_OF_TIME_WINDOWS
+
 		X['attempts_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
 		Length["attempts_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
-		if 'attempts_2items' in active_features:
-			a = 1
-		if 'attempts_3das3h' in active_features:
-			a = 1
-		if 'attempts_4das3hkc' in active_features:
-			a = 1
-		if 'attempts_5das3hitems' in active_features:
-			a = 1
+		
+		X['attempts_2items'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+		Length["attempts_2items"] = NB_OF_TIME_WINDOWS
+
+		X['attempts_3das3h'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		Length["attempts_3das3h"] = QMatrix.shape[1]
+
+		X['attempts_4das3hkc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
+		Length["attempts_4das3hkc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
+
+		X['attempts_5das3hitems'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+		Length["attempts_5das3hitems"] = NB_OF_TIME_WINDOWS
+
+		if 'failsdas3h' in active_features:
+			X["failsdas3h"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+			Length["failsdas3h"] = QMatrix.shape[1]
  
-		q = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
-		q2 = defaultdict(lambda: OurQueue(window_lengths))  # item_related
+		q_kc = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
+		q_item = defaultdict(lambda: OurQueue(window_lengths))  # item_related
 
 		for stud_id in df['user_id'].unique():
 			df_stud = df[df['user_id']==stud_id][['user_id', 'item_id', 'timestamp', 'correct']].copy()
@@ -259,23 +276,75 @@ class _DataProcessor:
 
 			kc_related = ['lasttime_0kcsingle', 'lasttime_1kc', 'wins_1kc', 'wins_4das3hkc', 'attempts_1kc', 'attempts_4das3hkc']
 			item_related = ['lasttime_2items', 'wins_2items', 'wins_5das3hitems', 'attempts_2items']
-			other = ['lasttime_3sequence', 'wins_3das3h', 'fails', 'attempts_3das3h', 'attempts_5das3hitems']
+			other = ['lasttime_3sequence', 'wins_3das3h', 'failsdas3h', 'attempts_3das3h', 'attempts_5das3hitems']
 
 			skills = QMatrix[df_stud[:,1].astype(int)].copy()
+			lasttime_0kcsingle = np.zeros((df_stud.shape[0], 1))
 			lasttime_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
+			lasttime_2items = np.zeros((df_stud.shape[0], 1))
+			lasttime_3sequence = np.zeros((df_stud.shape[0], 1))
+			
+			wins_1kc = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
+			wins_2items = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			wins_4das3hkc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			wins_5das3hitems = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
+
 			attempts_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			attempts_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
+			attempts_4das3hkc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			attempts_5das3hitems = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 				
-			for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
+			for l, (item_id, t, correct) in enumerate(zip(df_stud[:,1], df_stud[:,2], df_stud[:,3])):
 				if l != 0:
 					lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
 					attempts_1kc[l, :] = attempts_1kc[l-1, :]
+					lasttime_3sequence[l] = lasttime_3sequence[l-1]
 				for skill_id in dict_q_mat[item_id]:
-					lasttime_1kc[l, skill_id] = q[stud_id, skill_id].get_last()
-					attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
-					q[stud_id, skill_id].push(t)
+					if 'lasttime_0kcsingle' in active_features:
+						lasttime_0kcsingle[l] = q_kc[stud_id, skill_id].get_last()
+					lasttime_1kc[l, skill_id] = q_kc[stud_id, skill_id].get_last()
+					lasttime_2items[l] = q_item[stud_id, item_id].get_counters(t)
+
+					wins_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id, "correct"].get_counters(t)
+					wins_2items = q_item[stud_id, item_id, "correct"].get_counters(t)
+					wins_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id, "correct"].get_counters(t)))
+					wins_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id, "correct"].get_counters(t)))
+
+					attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id].get_counters(t)
+					attempts_2items[l] = q_item[stud_id, item_id].get_counters(t)
+					attempts_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id].get_counters(t)))
+					attempts_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id].get_counters(t)))
+					
+					q_kc[stud_id, skill_id].push(t)
+					q_item[stud_id, item_id].push(t)
+					if correct:
+						q_kc[stud_id, item_id, "correct"].push(t)
+						q_item[stud_id, item_id, "correct"].push(t)
+
+			skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
+			attempts_3das3h = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),0)[:-1],skills_temp)
+			wins_3das3h = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
+				np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
 			
+			if 'lasttime_0kcsingle' in active_features:
+				X['lasttime_0kcsingle'] = sparse.vstack([X['lasttime_0kcsingle'],sparse.csr_matrix(lasttime_0kcsingle)])
 			X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
+			X['lasttime_2items'] = sparse.vstack([X['lasttime_2items'],sparse.csr_matrix(lasttime_2items)])
+			X['wins_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['wins_2items'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['wins_3das3h'] = sparse.vstack([X['wins_3das3h'],sparse.csr_matrix(wins_3das3h)])
+			X['wins_4das3hkc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['wins_5das3hitems'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 			X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['attempts_2items'] = sparse.vstack([X['attempts_2items'],sparse.csr_matrix(attempts_2items)])
+			X['attempts_3das3h'] = sparse.vstack([X['attempts_3das3h'],sparse.csr_matrix(attempts_3das3h)])
+			X['attempts_4das3hkc'] = sparse.vstack([X['attempts_4das3hkc'],sparse.csr_matrix(attempts_4das3hkc)])
+			X['attempts_5das3hitems'] = sparse.vstack([X['attempts_5das3hitems'],sparse.csr_matrix(attempts_5das3hitems)])
+
+			if "failsdas3h" in active_features:
+				failsdas3h = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills.shape[1]),skills)),
+					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills)
+				X["failsdas3h"] = sparse.vstack([X["failsdas3h"],sparse.csr_matrix(failsdas3h)])
 
 		onehot = OneHotEncoder()
 		if 'users' in active_features:
@@ -292,6 +361,7 @@ class _DataProcessor:
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
 		saveDict(Length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
 		return sparse_df, Length
+
 
 '''
 userLC = [10,500,0.1,1]
@@ -315,7 +385,7 @@ Features['wins_2items'] = False
 Features['wins_3das3h'] = False #用于das3h中特征
 Features['wins_4das3hkc'] = False #用于das3h中特征
 Features['wins_5das3hitems'] = False #用于das3h中特征
-Features['fails'] = False
+Features['failsdas3h'] = False
 Features['attempts_1kc'] = True
 Features['attempts_2items'] = False
 Features['attempts_3das3h'] = False #用于das3h中特征
@@ -325,7 +395,8 @@ Features['attempts_5das3hitems'] = False #用于das3h中特征
 window_lengths = [3600]
 #window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]
 
-active_features = [key for key, value in Features.items() if value]
+# active_features = [key for key, value in Features.items() if value]
+active_features = [key for key, value in Features.items()]
 sparse_df, Length = a.loadSparseDF(active_features, window_lengths)
 print('**************sparse_df**************')
 print(sparse_df.shape)
