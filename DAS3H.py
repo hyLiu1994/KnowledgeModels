@@ -6,8 +6,8 @@ import argparse
 import numpy as np
 import pandas as pd
 import tensorflow as tf 
+from sklearn import metrics
 from tensorflow.keras import layers
-from sklearn.metrics import roc_auc_score, accuracy_score, log_loss
 from sklearn.linear_model import LogisticRegression
 from scipy.sparse import load_npz, hstack, csr_matrix
 
@@ -24,7 +24,7 @@ def runOJ():
 	Features = {}
 	Features['users'] = True
 	Features['items'] = True
-	Features['skills'] = False
+	Features['skills'] = True
 	Features['lasttime_0kcsingle'] = False
 	Features['lasttime_1kc'] = False
 	Features['lasttime_2items'] = False
@@ -87,6 +87,8 @@ def runOJ():
 		prefix = 'IRT'
 	elif set(active) == {'users', 'items'} and model_params['dim'] > 0:
 		prefix = 'MIRTb'
+	elif set(active) == {'users', 'items', 'skills'}:
+		prefix = 'KTM'
 	elif set(active) == {'skills', 'attempts'}:
 		prefix = 'AFM'
 	elif set(active) == {'skills', 'wins', 'fails'}:
@@ -110,14 +112,26 @@ def runOJ():
 	dict_data = a.loadSplitInfo(model_params['kFold'])
 
 	results={'LC_params':LC_params,'model_params':model_params,'FM_params':FM_params,'results':{}}
+	metrics1 = {'MAE':metrics.mean_absolute_error,
+	'MSE':metrics.mean_squared_error,
+	'AUC':metrics.roc_auc_score,
+    }
+
+	metrics2 = {'Accuracy':metrics.accuracy_score,
+	'Precision':metrics.precision_score,
+	'AP':metrics.average_precision_score,
+	'Recall':metrics.recall_score,
+	'F1-score':metrics.f1_score,
+    }
+
 	metrics_tf = {'tf_Accuracy':tf.keras.metrics.Accuracy(),
-				'tf_Precision':tf.keras.metrics.Precision(thresholds=model_params['threshold']),
-				'tf_Recall':tf.keras.metrics.Recall(thresholds=model_params['threshold']),
-			   'tf_MSE':tf.keras.metrics.MeanSquaredError(),
-			   'tf_MAE':tf.keras.metrics.MeanAbsoluteError(),
-			   'tf_RMSE':tf.keras.metrics.RootMeanSquaredError(),
-			   'tf_AUC':tf.keras.metrics.AUC(),
-			   'tf_AUC_1000': tf.keras.metrics.AUC(num_thresholds=1000)
+	'tf_Precision':tf.keras.metrics.Precision(thresholds=model_params['threshold']),
+	'tf_Recall':tf.keras.metrics.Recall(thresholds=model_params['threshold']),
+	'tf_MSE':tf.keras.metrics.MeanSquaredError(),
+	'tf_MAE':tf.keras.metrics.MeanAbsoluteError(),
+	'tf_RMSE':tf.keras.metrics.RootMeanSquaredError(),
+	'tf_AUC':tf.keras.metrics.AUC(),
+	'tf_AUC_1000': tf.keras.metrics.AUC(num_thresholds=1000)
 	}
 
 	for run_id in range(model_params['kFold']):
@@ -144,8 +158,14 @@ def runOJ():
 		results['results'][run_id] = {}
 		temp = results['results'][run_id]
 
+		for metric in metrics1:
+			temp[metric] = metrics1[metric](y_test, y_pred_test)
+
+		for metric in metrics2:
+			temp[metric] = metrics2[metric](y_test, (y_pred_test>model_params['threshold']).astype(int))
+		
 		for metric in metrics_tf:
-			m = metrics[metric]
+			m = metrics_tf[metric]
 			m.reset_states()
 			m.update_state(y_test, y_pred_test)
 			temp[metric] = m.result().numpy()
