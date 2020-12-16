@@ -245,7 +245,8 @@ class _DataProcessor:
 		if 'attempts_5das3hitems' in active_features:
 			a = 1
 
-		q = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows
+		q = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
+		q2 = defaultdict(lambda: OurQueue(window_lengths))  # item_related
 
 		for stud_id in df['user_id'].unique():
 			df_stud = df[df['user_id']==stud_id][['user_id', 'item_id', 'timestamp', 'correct']].copy()
@@ -259,46 +260,24 @@ class _DataProcessor:
 				skills = QMatrix[df_stud[:,1].astype(int)].copy()
 				X['skills'] = sparse.vstack([X['skills'],sparse.csr_matrix(skills)])
 
-			if 'lasttime_1kc' in active_features:
-				skills = QMatrix[df_stud[:,1].astype(int)].copy()
-				lasttime_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
-				for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
-					if l != 0:
-						lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
-						for skill_id in dict_q_mat[item_id]:
-							lasttime_1kc[l, skill_id] = q[stud_id, skill_id].get_last()
-				X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
+			kc_related = ['lasttime_0kcsingle', 'lasttime_1kc', 'wins_1kc', 'wins_4das3hkc', 'attempts_1kc', 'attempts_4das3hkc']
+			item_related = ['lasttime_2items', 'wins_2items', 'wins_5das3hitems', 'attempts_2items']
+			other = ['lasttime_3sequence', 'wins_3das3h', 'fails', 'attempts_3das3h', 'attempts_5das3hitems']
 
-			if 'attempts_1kc' in active_features:
-				skills = QMatrix[df_stud[:,1].astype(int)].copy()
-				attempts_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
-				for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
-					if l != 0:
-						attempts_1kc[l, :] = attempts_1kc[l-1, :]
-						for skill_id in dict_q_mat[item_id]:
-							attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
-						
-				X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
-
-			'''
-			#lasttime and attempts
-			if 'attempts' in active_features or 'lasttimes' in active_features:
-				attempts = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
-				lasttimes = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
-				deltaT = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
-				for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
+			skills = QMatrix[df_stud[:,1].astype(int)].copy()
+			lasttime_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
+			attempts_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+				
+			for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
+				if l != 0:
+					lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
+					attempts_1kc[l, :] = attempts_1kc[l-1, :]
 					for skill_id in dict_q_mat[item_id]:
-						attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
-						#print(attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS])
-						#print(l, skill_id*NB_OF_TIME_WINDOWS,(skill_id+1)*NB_OF_TIME_WINDOWS)
-						lastT = q[stud_id, skill_id].get_last()
-						lasttimes[l, skill_id] = lastT
-						deltaT[l, skill_id] = t-lastT
-						q[stud_id, skill_id].push(t)
-				X['attempts'] = sparse.vstack([X['attempts'],sparse.csr_matrix(attempts)])
-				X['lasttimes'] = sparse.vstack([X['lasttimes'],sparse.csr_matrix(lasttimes)])
-				X['deltaT'] = sparse.vstack([X['deltaT'],sparse.csr_matrix(deltaT)])
-			'''
+						lasttime_1kc[l, skill_id] = q[stud_id, skill_id].get_last()
+						attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.array(q[stud_id, skill_id].get_counters(t))
+						q[stu_id, skill_id].push(t)
+			X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
+			X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 
 		onehot = OneHotEncoder()
 		if 'users' in active_features:
