@@ -12,7 +12,6 @@ from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
 from OJDataProcessor import _OJDataProcessor
 from AssistDataProcessor import _AssistDataProcessor
-from MathDataProcessor import _MathDataProcessor
 
 class _DataProcessor:
 	# minTimestamp必须传值，默认值不管用
@@ -47,7 +46,7 @@ class _DataProcessor:
 		for run_id, (i_user_train, i_user_test) in enumerate(splits):
 			users_train = all_users[i_user_train]
 			users_test = all_users[i_user_test]
-			dict_data[run_id]={'train':users_train,'test':users_test}
+			dict_data[str(run_id)]={'train':users_train,'test':users_test}
 
 		saveDict(dict_data,self.LCDataDir, 'splitedInformation_kFold('+str(kFold)+').json')
 		return dict_data
@@ -370,15 +369,6 @@ high_time = "2013-09-01 00:00:00"
 timeLC = [low_time, high_time]
 
 a = _DataProcessor(userLC, problemLC, timeLC, 'assit', TmpDir = "../data")
-print('**************LC_params**************')
-printDict(a.LC_params)
-'''
-'''
-userLC = []
-problemLC = []
-timeLC = []
-
-a = _DataProcessor(userLC, problemLC, timeLC, 'math', TmpDir = "../data")
 print('**************LC_params**************')
 printDict(a.LC_params)
 '''
