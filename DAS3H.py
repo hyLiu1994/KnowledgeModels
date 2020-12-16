@@ -24,7 +24,7 @@ def runOJ():
 	Features = {}
 	Features['users'] = True
 	Features['items'] = True
-	Features['skills'] = True
+	Features['skills'] = False
 	Features['lasttime_0kcsingle'] = False
 	Features['lasttime_1kc'] = False
 	Features['lasttime_2items'] = False
@@ -51,7 +51,7 @@ def runOJ():
 	# model parameters
 	#######################################
 	model_params = {
-		'dim': 5,
+		'dim': 0,
 		'kFold': 5,
 		'iter': 300,
 		'threshold': 0.5,
@@ -124,8 +124,10 @@ def runOJ():
 	'F1-score':metrics.f1_score,
     }
 
-	metrics_tf = {'tf_Accuracy':tf.keras.metrics.Accuracy(),
-	'tf_Precision':tf.keras.metrics.Precision(thresholds=model_params['threshold']),
+	metrics_tf1 = {'tf_Accuracy':tf.keras.metrics.Accuracy(),
+	}
+
+	metrics_tf2 = {'tf_Precision':tf.keras.metrics.Precision(thresholds=model_params['threshold']),
 	'tf_Recall':tf.keras.metrics.Recall(thresholds=model_params['threshold']),
 	'tf_MSE':tf.keras.metrics.MeanSquaredError(),
 	'tf_MAE':tf.keras.metrics.MeanAbsoluteError(),
@@ -164,8 +166,14 @@ def runOJ():
 		for metric in metrics2:
 			temp[metric] = metrics2[metric](y_test, (y_pred_test>model_params['threshold']).astype(int))
 		
-		for metric in metrics_tf:
-			m = metrics_tf[metric]
+		for metric in metrics_tf1:
+			m = metrics_tf1[metric]
+			m.reset_states()
+			m.update_state(y_test, tf.greater_equal(y_pred_test,model_params['threshold']))
+			temp[metric] = m.result().numpy()
+		
+		for metric in metrics_tf2:
+			m = metrics_tf2[metric]
 			m.reset_states()
 			m.update_state(y_test, y_pred_test)
 			temp[metric] = m.result().numpy()
