@@ -284,8 +284,8 @@ class _DataProcessor:
 			lasttime_2items = np.zeros((df_stud.shape[0], 1))
 			lasttime_3sequence = np.zeros((df_stud.shape[0], 1))
 			
-			wins_1kc = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
-			wins_2items = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			wins_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
+			wins_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 			wins_4das3hkc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
 			wins_5das3hitems = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 
@@ -356,6 +356,11 @@ class _DataProcessor:
 			if verbose:
 				print("Items encoded.")
 
+		'''for agent in active_features:
+			print(agent)
+			sparse.hstack([sparse.csr_matrix(X['df']),X[agent]]).tocsr()
+		'''
+
 		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
 		# 此处时间窗口数无法保存
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
@@ -363,7 +368,7 @@ class _DataProcessor:
 		return sparse_df, Length
 
 
-'''
+
 userLC = [10,500,0.1,1]
 problemLC = [10,500,0,1]
 #hdu原始数据里的最值，可以注释，不要删
@@ -403,7 +408,7 @@ print(sparse_df.shape)
 printDict(Length)
 print('**************statics**************')
 printDict(a.dataprocessor.LC_params)
-'''
+
 
 
 
