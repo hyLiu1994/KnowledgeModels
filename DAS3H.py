@@ -72,14 +72,14 @@ def runKDD():
 	#######################################
 	# LC parameters
 	#######################################
-	userLC = [10,1e9]
-	problemLC = [10,1e9]
+	userLC = [10,100]
+	problemLC = [10,100]
 	# algebra08原始数据里的最值，可以注释，不要删
 	low_time = "2008-09-08 14:46:48"
 	high_time = "2009-01-01 00:00:00"
 	timeLC = [low_time, high_time]
 
-	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./data")
+	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
 	LC_params = a.LC_params
 
 	prefix = ''
@@ -394,14 +394,14 @@ def runAssist():
 	#######################################
 	# LC parameters
 	#######################################
-	userLC = [10,1e9]
-	problemLC = [10,1e9]
+	userLC = [10,1000]
+	problemLC = [10,1000]
 	#assistments12原始数据里的最值，可以注释，不要删
 	low_time = "2012-09-01 00:00:00"
 	high_time = "2013-09-01 00:00:00"
 	timeLC = [low_time, high_time]
 	
-	a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = "./data")
+	a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = "./DataProcessor/data")
 	LC_params = a.LC_params
 
 	prefix = ''
@@ -503,4 +503,4 @@ def runAssist():
 	saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
 
 if __name__ == "__main__":
-	runAssist()
+	runKDD()
