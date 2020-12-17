@@ -275,6 +275,7 @@ class _DataProcessor:
 
 		i = 0
 		userNum = len(df['user_id'].unique())
+		print("userNum:", userNum)
 		for stud_id in df['user_id'].unique():
 			df_stud = df[df['user_id']==stud_id][['user_id', 'item_id', 'timestamp', 'correct']].copy()
 			df_stud.sort_values(by='timestamp', inplace=True) # Sort values 
@@ -334,13 +335,34 @@ class _DataProcessor:
 					attempts_2items[l] = q_item[stud_id, item_id].get_counters(t)
 					attempts_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id].get_counters(t)))
 					attempts_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id].get_counters(t)))
-					
+
 				for skill_id in dict_q_mat[item_id]:
 					q_kc[stud_id, skill_id].push(t)
 					q_item[stud_id, item_id].push(t)
 					if correct:
 						q_kc[stud_id, item_id, "correct"].push(t)
 						q_item[stud_id, item_id, "correct"].push(t)
+				'''
+				if (stud_id==4763) and (item_id==966) and (t==12944031):
+					pre_t = df_stud[l-1, 2]
+					print('stud_id:',stud_id,'l:',l)
+					print('item_id:',item_id)
+					print('correct:',correct)
+					print('t:',t)
+					print("timeInterval:", t - pre_t)
+					print("skills:", skills[l])
+					print("lasttime_1kc:", t - lasttime_1kc[l])
+					print("lasttime_1kc****:", t - lasttime_1kc[l-1])
+					print("attempts_1kc:", attempts_1kc[l])
+					print("attempts_1kc****:", attempts_1kc[l-1])
+					print("lasttimeTest:", (t - lasttime_1kc[l]) * skills[l-1])
+					print('interval_1kc:',interval_1kc[l] * skills[l-1])
+					break
+				'''
+				# skills[l]
+				# attempts_1kc[l]
+				# lasttime_1kc[l]
+
 
 			skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
 			attempts_3das3h = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),0)[:-1],skills_temp)
@@ -357,11 +379,11 @@ class _DataProcessor:
 			X['interval_2items'] = sparse.vstack([X['interval_2items'],sparse.csr_matrix(interval_2items)])
 			X['interval_3sequence'] = sparse.vstack([X['interval_3sequence'],sparse.csr_matrix(interval_3sequence)])
 
-			X['wins_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
-			X['wins_2items'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['wins_1kc'] = sparse.vstack([X['wins_1kc'],sparse.csr_matrix(wins_1kc)])
+			X['wins_2items'] = sparse.vstack([X['wins_2items'],sparse.csr_matrix(wins_2items)])
 			X['wins_3das3h'] = sparse.vstack([X['wins_3das3h'],sparse.csr_matrix(wins_3das3h)])
-			X['wins_4das3hkc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
-			X['wins_5das3hitems'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
+			X['wins_4das3hkc'] = sparse.vstack([X['wins_4das3hkc'],sparse.csr_matrix(wins_4das3hkc)])
+			X['wins_5das3hitems'] = sparse.vstack([X['wins_5das3hitems'],sparse.csr_matrix(wins_5das3hitems)])
 			X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 			X['attempts_2items'] = sparse.vstack([X['attempts_2items'],sparse.csr_matrix(attempts_2items)])
 			X['attempts_3das3h'] = sparse.vstack([X['attempts_3das3h'],sparse.csr_matrix(attempts_3das3h)])
@@ -386,18 +408,15 @@ class _DataProcessor:
 			if verbose:
 				print("Items encoded.")
 
-		'''for agent in active_features:
-			print(agent)
-			print(sparse.csr_matrix(X['df']).shape)
-			print(X[agent].shape)
-			sparse.hstack([sparse.csr_matrix(X['df']),X[agent]]).tocsr()
-		'''
-
-
 		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
 		# 此处时间窗口数无法保存
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
 		saveDict(Length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
+
+		for item in sparse_df.toarray():
+			if (item[0]==4763) and (item[1]==966) and (item[3]==12944031):
+				print(item)
+
 		return sparse_df, Length
 
 
@@ -408,36 +427,36 @@ problemLC = [10,500,0,1]
 low_time = "2018-06-01 00:00:00" 
 high_time = "2018-11-29 00:00:00"
 timeLC = [low_time, high_time]
-a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")
+a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")                                                                                                   
  
 Features = {}
 Features['users'] = False
 Features['items'] = False
 Features['skills'] = True
 Features['lasttime_0kcsingle'] = False
-Features['lasttime_1kc'] = False
+Features['lasttime_1kc'] = True
 Features['lasttime_2items'] = False
 Features['lasttime_3sequence'] = False
 Features['interval_1kc'] = True
-Features['interval_2items'] = True
-Features['interval_3sequence'] = True
-Features['wins_1kc'] = True
-Features['wins_2items'] = True
-Features['wins_3das3h'] = True #用于das3h中特征
-Features['wins_4das3hkc'] = True #用于das3h中特征
-Features['wins_5das3hitems'] = True #用于das3h中特征
-Features['failsdas3h'] = True
-Features['attempts_1kc'] = True
-Features['attempts_2items'] = True
-Features['attempts_3das3h'] = True #用于das3h中特征
-Features['attempts_4das3hkc'] = True #用于das3h中特征
-Features['attempts_5das3hitems'] = True #用于das3h中特征
+Features['interval_2items'] = False
+Features['interval_3sequence'] = False
+Features['wins_1kc'] = False
+Features['wins_2items'] = False
+Features['wins_3das3h'] = False #用于das3h中特征
+Features['wins_4das3hkc'] = False #用于das3h中特征
+Features['wins_5das3hitems'] = False #用于das3h中特征
+Features['failsdas3h'] = False
+Features['attempts_1kc'] = True 
+Features['attempts_2items'] = False
+Features['attempts_3das3h'] = False #用于das3h中特征
+Features['attempts_4das3hkc'] = False #用于das3h中特征
+Features['attempts_5das3hitems'] = False #用于das3h中特征
 
-window_lengths = [3600]
+window_lengths = [3600*24*30*365]
 #window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]
 
-active_features = [key for key, value in Features.items() if value]
-# active_features = [key for key, value in Features.items()]
+# active_features = [key for key, value in Features.items() if value]
+active_features = [key for key, value in Features.items()]
 sparse_df, Length = a.loadSparseDF(active_features, window_lengths)
 print('**************sparse_df**************')
 print(sparse_df.shape)
