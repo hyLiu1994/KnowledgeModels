@@ -225,6 +225,17 @@ class _DataProcessor:
 		X['lasttime_3sequence'] = sparse.csr_matrix(np.empty((0, 1)))
 		Length["lasttime_3sequence"] = 1
 
+		X["interval_1kc"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		Length["interval_1kc"] = QMatrix.shape[1]
+
+
+		X['interval_2items'] = sparse.csr_matrix(np.empty((0, 1)))
+		Length["interval_2items"] = 1
+
+		X['interval_3sequence'] = sparse.csr_matrix(np.empty((0, 1)))
+		Length["interval_3sequence"] = 1
+
+
 		X['wins_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
 		Length["wins_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
 		
@@ -281,10 +292,15 @@ class _DataProcessor:
 			other = ['lasttime_3sequence', 'wins_3das3h', 'failsdas3h', 'attempts_3das3h', 'attempts_5das3hitems']
 
 			skills = QMatrix[df_stud[:,1].astype(int)].copy()
-			lasttime_0kcsingle = np.zeros((df_stud.shape[0], 1))
-			lasttime_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
-			lasttime_2items = np.zeros((df_stud.shape[0], 1))
-			lasttime_3sequence = np.zeros((df_stud.shape[0], 1))
+			lasttime_0kcsingle = np.ones((df_stud.shape[0], 1)) * (-1e8)
+			lasttime_1kc = np.ones((df_stud.shape[0], QMatrix.shape[1])) * (-1e8)
+			lasttime_2items = np.ones((df_stud.shape[0], 1)) * (-1e8)
+			lasttime_3sequence = np.ones((df_stud.shape[0], 1)) * (-1e8)
+
+			interval_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
+			interval_2items = np.zeros((df_stud.shape[0], 1))
+			interval_3sequence = np.zeros((df_stud.shape[0], 1))
+
 			
 			wins_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
 			wins_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
@@ -301,11 +317,15 @@ class _DataProcessor:
 					lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
 					attempts_1kc[l, :] = attempts_1kc[l-1, :]
 					lasttime_3sequence[l] = lasttime_3sequence[l-1]
+					interval_3sequence[l] = t - lasttime_3sequence[l]
 				for skill_id in dict_q_mat[item_id]:
 					if 'lasttime_0kcsingle' in active_features:
 						lasttime_0kcsingle[l] = q_kc[stud_id, skill_id].get_last()
 					lasttime_1kc[l, skill_id] = q_kc[stud_id, skill_id].get_last()
 					lasttime_2items[l] = q_item[stud_id, item_id].get_counters(t)
+
+					interval_1kc[l, skill_id] = t - q_kc[stud_id, skill_id].get_last()
+					interval_2items[l] = t - q_item[stud_id, item_id].get_counters(t)
 
 					wins_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id, "correct"].get_counters(t)
 					wins_2items = q_item[stud_id, item_id, "correct"].get_counters(t)
@@ -332,6 +352,12 @@ class _DataProcessor:
 				X['lasttime_0kcsingle'] = sparse.vstack([X['lasttime_0kcsingle'],sparse.csr_matrix(lasttime_0kcsingle)])
 			X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
 			X['lasttime_2items'] = sparse.vstack([X['lasttime_2items'],sparse.csr_matrix(lasttime_2items)])
+			X['lasttime_3sequence'] = sparse.vstack([X['lasttime_3sequence'],sparse.csr_matrix(lasttime_3sequence)])
+
+			X['interval_1kc'] = sparse.vstack([X['interval_1kc'],sparse.csr_matrix(interval_1kc)])
+			X['interval_2items'] = sparse.vstack([X['interval_2items'],sparse.csr_matrix(interval_2items)])
+			X['interval_3sequence'] = sparse.vstack([X['interval_3sequence'],sparse.csr_matrix(interval_3sequence)])
+
 			X['wins_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 			X['wins_2items'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 			X['wins_3das3h'] = sparse.vstack([X['wins_3das3h'],sparse.csr_matrix(wins_3das3h)])
@@ -388,11 +414,14 @@ a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")
 Features = {}
 Features['users'] = False
 Features['items'] = False
-Features['skills'] = False
+Features['skills'] = True
 Features['lasttime_0kcsingle'] = False
-Features['lasttime_1kc'] = True
+Features['lasttime_1kc'] = False
 Features['lasttime_2items'] = False
 Features['lasttime_3sequence'] = False
+Features['interval_1kc'] = True
+Features['interval_2items'] = True
+Features['interval_3sequence'] = True
 Features['wins_1kc'] = True
 Features['wins_2items'] = True
 Features['wins_3das3h'] = True #用于das3h中特征
