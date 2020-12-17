@@ -163,7 +163,7 @@ class _OJDataProcessor(object):
         saveDict(knowledgeInformation,self.LCDataDir,'knowledgeInformation.json')
         saveDict(self.LC_params,self.LCDataDir,'parameters.json')
 
-        return df, QMatrix, StaticInformation, DictList
+        return df, sparse.csr_matrix(QMatrix), StaticInformation, DictList
 
 
 '''
