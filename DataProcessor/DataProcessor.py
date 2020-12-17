@@ -262,6 +262,8 @@ class _DataProcessor:
 		q_kc = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
 		q_item = defaultdict(lambda: OurQueue(window_lengths))  # item_related
 
+		i = 0
+		userNum = len(df['user_id'].unique())
 		for stud_id in df['user_id'].unique():
 			df_stud = df[df['user_id']==stud_id][['user_id', 'item_id', 'timestamp', 'correct']].copy()
 			df_stud.sort_values(by='timestamp', inplace=True) # Sort values 
@@ -345,6 +347,9 @@ class _DataProcessor:
 				failsdas3h = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills.shape[1]),skills)),
 					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills)
 				X["failsdas3h"] = sparse.vstack([X["failsdas3h"],sparse.csr_matrix(failsdas3h)])
+			i+=1
+			if i%100 == 0:
+				print(i,userNum)
 
 		onehot = OneHotEncoder()
 		if 'users' in active_features:
@@ -358,8 +363,11 @@ class _DataProcessor:
 
 		'''for agent in active_features:
 			print(agent)
+			print(sparse.csr_matrix(X['df']).shape)
+			print(X[agent].shape)
 			sparse.hstack([sparse.csr_matrix(X['df']),X[agent]]).tocsr()
 		'''
+
 
 		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
 		# 此处时间窗口数无法保存
@@ -380,28 +388,28 @@ a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")
 Features = {}
 Features['users'] = False
 Features['items'] = False
-Features['skills'] = True
+Features['skills'] = False
 Features['lasttime_0kcsingle'] = False
 Features['lasttime_1kc'] = True
 Features['lasttime_2items'] = False
 Features['lasttime_3sequence'] = False
-Features['wins_1kc'] = False
-Features['wins_2items'] = False
-Features['wins_3das3h'] = False #用于das3h中特征
-Features['wins_4das3hkc'] = False #用于das3h中特征
-Features['wins_5das3hitems'] = False #用于das3h中特征
-Features['failsdas3h'] = False
+Features['wins_1kc'] = True
+Features['wins_2items'] = True
+Features['wins_3das3h'] = True #用于das3h中特征
+Features['wins_4das3hkc'] = True #用于das3h中特征
+Features['wins_5das3hitems'] = True #用于das3h中特征
+Features['failsdas3h'] = True
 Features['attempts_1kc'] = True
-Features['attempts_2items'] = False
-Features['attempts_3das3h'] = False #用于das3h中特征
-Features['attempts_4das3hkc'] = False #用于das3h中特征
-Features['attempts_5das3hitems'] = False #用于das3h中特征
+Features['attempts_2items'] = True
+Features['attempts_3das3h'] = True #用于das3h中特征
+Features['attempts_4das3hkc'] = True #用于das3h中特征
+Features['attempts_5das3hitems'] = True #用于das3h中特征
 
 window_lengths = [3600]
 #window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]
 
-# active_features = [key for key, value in Features.items() if value]
-active_features = [key for key, value in Features.items()]
+active_features = [key for key, value in Features.items() if value]
+# active_features = [key for key, value in Features.items()]
 sparse_df, Length = a.loadSparseDF(active_features, window_lengths)
 print('**************sparse_df**************')
 print(sparse_df.shape)
