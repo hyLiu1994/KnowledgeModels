@@ -166,7 +166,7 @@ class _KDDCupDataProcessor:
         #saveDict(UnitInformation,self.LCDataDir,'userInformation.json')
         #saveDict(SectionInformation,self.LCDataDir,'userInformation.json')
 
-        return df, QMatrix, StaticInformation, DictList
+        return df, sparse.csr_matrix(QMatrix), StaticInformation, DictList
 
 
 
