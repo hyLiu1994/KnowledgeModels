@@ -314,11 +314,9 @@ class _DataProcessor:
 				
 			for l, (item_id, t, correct) in enumerate(zip(df_stud[:,1], df_stud[:,2], df_stud[:,3])):
 				if l != 0:
-					lasttime_1kc[l, :] = lasttime_1kc[l-1, :]
-					attempts_1kc[l, :] = attempts_1kc[l-1, :]
 					lasttime_3sequence[l] = lasttime_3sequence[l-1]
 					interval_3sequence[l] = t - lasttime_3sequence[l]
-				for skill_id in dict_q_mat[item_id]:
+				for skill_id in range(QMatrix.shape[1]):
 					if 'lasttime_0kcsingle' in active_features:
 						lasttime_0kcsingle[l] = q_kc[stud_id, skill_id].get_last()
 					lasttime_1kc[l, skill_id] = q_kc[stud_id, skill_id].get_last()
@@ -337,6 +335,7 @@ class _DataProcessor:
 					attempts_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id].get_counters(t)))
 					attempts_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id].get_counters(t)))
 					
+				for skill_id in dict_q_mat[item_id]:
 					q_kc[stud_id, skill_id].push(t)
 					q_item[stud_id, item_id].push(t)
 					if correct:
