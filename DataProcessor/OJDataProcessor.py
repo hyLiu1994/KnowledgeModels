@@ -107,9 +107,12 @@ class _OJDataProcessor(object):
         df = df.groupby('item_id').filter(lambda x: len(x['correct']==1)/len(x) >= self.LC_params['problemLC'][2])
         df = df.groupby('item_id').filter(lambda x: len(x['correct']==1)/len(x) <= self.LC_params['problemLC'][3])
 
-        df.sort_values(by = 'timestamp', inplace = True)
         df = df[df.correct.isin([0,1])] # Remove potential continuous outcomes
         df['correct'] = df['correct'].astype(np.int32) # Cast outcome as int32
+        df.sort_values(by = 'timestamp', inplace = True)
+        df.reset_index(inplace=True, drop=True) # Add unique identifier of the row
+        df["inter_id"] = df.index
+
 
         userInformation = createDictBydf(df, 'user_id')
         itemInformation = createDictBydf(df, 'item_id')
@@ -152,6 +155,17 @@ class _OJDataProcessor(object):
         StaticInformation['aveitemNumSubmit'] = df.shape[0] / len(df['item_id'].unique())
         StaticInformation['aveItemContainKnowledge'] = numKCs / len(df['item_id'].unique())
 
+        User_grouped=df.groupby(['user_id']) 
+        StaticInformation['maxUserSubmit'] = max(User_grouped.count()["inter_id"])
+        StaticInformation['minUserSubmit'] = min(User_grouped.count()["inter_id"])
+
+        Item_grouped=df.groupby(['item_id']) 
+        StaticInformation['maxItemSubmit'] = max(Item_grouped.count()["inter_id"])
+        StaticInformation['minItemSubmit'] = min(Item_grouped.count()["inter_id"])
+
+        StaticInformation['maxItemContainKnowledge'] = max(np.sum(QMatrix,-1))
+        StaticInformation['minItemContainKnowledge'] = min(np.sum(QMatrix,-1))
+
         DictList = [userInformation, itemInformation, knowledgeInformation]
 
         # Save data
@@ -168,13 +182,13 @@ class _OJDataProcessor(object):
 
 '''
 #用户条件限制[最少做题数，最多做题数，最小通过率，最大通过率]
-userLC = [10,500,0.1,1]
-problemLC = [10,500,0,1]
+userLC = [10,50,0.1,1]
+problemLC = [10,50,0,1]
 #hdu原始数据里的最值，可以注释，不要删
 low_time = "2018-06-01 00:00:00" 
 high_time = "2018-11-29 00:00:00"
 timeLC = [low_time, high_time]
-a = _OJDataProcessor(userLC, problemLC, timeLC, True)
+a = _OJDataProcessor(userLC, problemLC, timeLC, True, TmpDir = "../data/")
 start = time.time()
 [df, QMatrix, StaticInformation, DictList] = a.loadLCData()
 end = time.time()
