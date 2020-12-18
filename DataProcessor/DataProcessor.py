@@ -169,7 +169,7 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset, item_num
 
-	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = [], verbose=True):
+	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], verbose=True, all_features = []):
 		"""Build sparse features dataset from dense dataset and q-matrix.
 
 		Arguments:
@@ -461,8 +461,6 @@ class _DataProcessor:
 
 
 
-userLC = [10,500,0.1,1]
-problemLC = [10,500,0,1]
 userLC = [10,30,0,1]
 problemLC = [10,30,0,1]
 #hdu原始数据里的最值，可以注释，不要删
