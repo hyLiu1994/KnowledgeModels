@@ -89,13 +89,13 @@ def runKDD():
 		prefix = 'MIRTb'
 	elif set(active) == {'users', 'items', 'skills'}:
 		prefix = 'KTM'
-	elif set(active) == {'skills', 'attempts'}:
+	elif set(active) == {'skills', 'attempts_3das3h'}:
 		prefix = 'AFM'
-	elif set(active) == {'skills', 'wins', 'fails'}:
+	elif set(active) == {'skills', 'wins_3das3h', 'fails'}:
 		prefix = 'PFA'
-	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts', 'tw_kc'}:
+	elif set(active) == {'users', 'items', 'skills', 'wins_4das3hkc', 'attempts_4das3hkc'}:
 		prefix = 'DAS3H'
-	elif set(active) == {'users', 'items', 'wins', 'attempts', 'tw_items'}:
+	elif set(active) == {'users', 'items', 'wins_5das3hitems', 'attempts_5das3hitems'}:
 		prefix = 'DASH'
 	else:
 		prefix = 'TEST_' + features_suffix
@@ -251,13 +251,13 @@ def runOJ():
 		prefix = 'MIRTb'
 	elif set(active) == {'users', 'items', 'skills'}:
 		prefix = 'KTM'
-	elif set(active) == {'skills', 'attempts'}:
+	elif set(active) == {'skills', 'attempts_3das3h'}:
 		prefix = 'AFM'
-	elif set(active) == {'skills', 'wins', 'fails'}:
+	elif set(active) == {'skills', 'wins_3das3h', 'fails'}:
 		prefix = 'PFA'
-	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts', 'tw_kc'}:
+	elif set(active) == {'users', 'items', 'skills', 'wins_4das3hkc', 'attempts_4das3hkc'}:
 		prefix = 'DAS3H'
-	elif set(active) == {'users', 'items', 'wins', 'attempts', 'tw_items'}:
+	elif set(active) == {'users', 'items', 'wins_5das3hitems', 'attempts_5das3hitems'}:
 		prefix = 'DASH'
 	else:
 		prefix = 'TEST_' + features_suffix
@@ -411,13 +411,13 @@ def runAssist():
 		prefix = 'MIRTb'
 	elif set(active) == {'users', 'items', 'skills'}:
 		prefix = 'KTM'
-	elif set(active) == {'skills', 'attempts'}:
+	elif set(active) == {'skills', 'attempts_3das3h'}:
 		prefix = 'AFM'
-	elif set(active) == {'skills', 'wins', 'fails'}:
+	elif set(active) == {'skills', 'wins_3das3h', 'fails'}:
 		prefix = 'PFA'
-	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts', 'tw_kc'}:
+	elif set(active) == {'users', 'items', 'skills', 'wins_4das3hkc', 'attempts_4das3hkc'}:
 		prefix = 'DAS3H'
-	elif set(active) == {'users', 'items', 'wins', 'attempts', 'tw_items'}:
+	elif set(active) == {'users', 'items', 'wins_5das3hitems', 'attempts_5das3hitems'}:
 		prefix = 'DASH'
 	else:
 		prefix = 'TEST_' + features_suffix
