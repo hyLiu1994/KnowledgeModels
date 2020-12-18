@@ -77,6 +77,16 @@ class _KDDCupDataProcessor:
             'Correct First Attempt': 'correct'
             })[['user_id', 'pb_id', 'step_id' ,'correct', 'timestamp', 'kc_id']]
 
+        # 这里的去重指的是一个人同时提交同一道题
+        if self.LC_params['dropDup']:
+            df.drop_duplicates(subset=['user_id', 'pb_id', 'step_id', 'timestamp'], inplace=True)
+        
+        if self.LC_params['remoNanSkill']:
+            df = df[~df['kc_id'].isnull()]
+        else:
+            df.ix[df['kc_id'].isnull(), 'kc_id'] = 'NaN'
+        df = df[df.correct.isin([0,1])] # Remove potential continuous outcomes
+
         # 1 timeLC
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df['timestamp'] = df['timestamp'] - self.minTimestamp
@@ -94,19 +104,12 @@ class _KDDCupDataProcessor:
         df = df.groupby('pb_id').filter(lambda x: len(x) >= self.LC_params['problemLC'][0])
         df = df.groupby('pb_id').filter(lambda x: len(x) <= self.LC_params['problemLC'][1])
 
-        df.sort_values(by = 'timestamp', inplace = True)
-        
         df['item_id'] = str(df['pb_id'])+':'+df['step_id']
         df = df[['user_id', 'item_id', 'kc_id', 'correct', 'timestamp']]
+        df.sort_values(by = 'timestamp', inplace = True)
+        df.reset_index(inplace=True, drop=True) # Add unique identifier of the row
+        df["inter_id"] = df.index
 
-        # 这里的去重指的是一个人同时提交同一道题
-        if self.LC_params['dropDup']:
-            df.drop_duplicates(subset=['user_id', 'item_id', 'timestamp'], inplace=True)
-        
-        if self.LC_params['remoNanSkill']:
-            df = df[~df['kc_id'].isnull()]
-        else:
-            df.ix[df['kc_id'].isnull(), 'kc_id'] = 'NaN'
 
         # Create list of KCs
         listOfKC = []
@@ -139,10 +142,6 @@ class _KDDCupDataProcessor:
                 QMatrix[item_skill[i,0],dict1_kc[kc]] = 1
         numKCs = str(QMatrix.tolist()).count("1")
 
-        df = df[['user_id', 'item_id', 'timestamp', 'correct']]
-        df = df[df.correct.isin([0,1])] # Remove potential continuous outcomes
-        df['correct'] = df['correct'].astype(np.int32) # Cast outcome as int32
-
         StaticInformation = {}
         StaticInformation['userNum'] = len(df['user_id'].unique())
         StaticInformation['itemNum'] = len(df['item_id'].unique())
@@ -150,11 +149,25 @@ class _KDDCupDataProcessor:
         StaticInformation['recordsNum'] = df.shape[0]
 
         StaticInformation['aveUserSubmit'] = df.shape[0] / len(df['user_id'].unique())
-        StaticInformation['aveitemNumSubmit'] = df.shape[0] / len(df['item_id'].unique())
+        StaticInformation['aveItemSubmit'] = df.shape[0] / len(df['item_id'].unique())
         StaticInformation['aveItemContainKnowledge'] = numKCs / len(df['item_id'].unique())
+
+        User_grouped=df.groupby(['user_id']) 
+        StaticInformation['maxUserSubmit'] = max(User_grouped.count()["inter_id"])
+        StaticInformation['minUserSubmit'] = min(User_grouped.count()["inter_id"])
+
+        Item_grouped=df.groupby(['item_id']) 
+        StaticInformation['maxItemSubmit'] = max(Item_grouped.count()["inter_id"])
+        StaticInformation['minItemSubmit'] = min(Item_grouped.count()["inter_id"])
+
+        StaticInformation['maxItemContainKnowledge'] = max(np.sum(QMatrix,-1))
+        StaticInformation['minItemContainKnowledge'] = min(np.sum(QMatrix,-1))
 
         #DictList = [userInformation, knowledgeInformation, UnitInformation, SectionInformation]
         DictList = [userInformation, knowledgeInformation]
+        df = df[['user_id', 'item_id', 'timestamp', 'correct']]
+        df = df[df.correct.isin([0,1])] # Remove potential continuous outcomes
+        df['correct'] = df['correct'].astype(np.int32) # Cast outcome as int32
 
         # Save data
         sparse.save_npz(os.path.join(self.LCDataDir,'QMatrix.npz'), sparse.csr_matrix(QMatrix))
@@ -171,19 +184,20 @@ class _KDDCupDataProcessor:
 
 
 '''
-userLC = [10,100]
+userLC = [10,12]
 problemLC = [10,100]
 #algebra08原始数据里的最值，可以注释，不要删
 low_time = "2008-09-08 14:46:48"
 high_time = "2009-07-06 18:02:12"
 timeLC = [low_time, high_time]
-a = _KDDCupDataProcessor(userLC, problemLC, timeLC)
+a = _KDDCupDataProcessor(userLC, problemLC, timeLC, TmpDir = '../data')
 print('**************LC_params**************')
 printDict(a.LC_params)
 [df, QMatrix, StaticInformation, DictList] = a.loadLCData()
 print('**************StaticInformation**************')
 printDict(StaticInformation)
 '''
+
 
 
 
