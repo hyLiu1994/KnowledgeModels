@@ -58,6 +58,15 @@ class _AssistDataProcessor:
 
         print(df.columns)
 
+        # 这里的去重指的是一个人同时提交同一道题
+        if self.LC_params['dropDup']:
+            df.drop_duplicates(subset=['user_id', 'problem_id', 'start_time'], inplace=True)
+        
+        if self.LC_params['remoNanSkill']:
+            df = df[~df['skill_id'].isnull()]
+        else:
+            df.ix[df['skill_id'].isnull(), 'skill_id'] = 'NaN'
+
         # 1 timeLC
         df["timestamp"] = df["start_time"]
         df['timestamp'] = pd.to_datetime(df['timestamp'])
@@ -76,15 +85,9 @@ class _AssistDataProcessor:
         df = df.groupby('problem_id').filter(lambda x: len(x) <= self.LC_params['problemLC'][1])
 
         df.sort_values(by = 'timestamp', inplace = True)
+        df.reset_index(inplace=True, drop=True) # Add unique identifier of the row
+        df["inter_id"] = df.index
 
-        # 这里的去重指的是一个人同时提交同一道题
-        if self.LC_params['dropDup']:
-            df.drop_duplicates(subset=['user_id', 'problem_id', 'timestamp'], inplace=True)
-        
-        if self.LC_params['remoNanSkill']:
-            df = df[~df['skill_id'].isnull()]
-        else:
-            df.ix[df['skill_id'].isnull(), 'skill_id'] = 'NaN'
 
         userInformation = createDictBydf(df, 'user_id')
         itemInformation = createDictBydf(df, 'problem_id')
@@ -114,6 +117,17 @@ class _AssistDataProcessor:
         StaticInformation['aveUserSubmit'] = df.shape[0] / len(df['user_id'].unique())
         StaticInformation['aveitemNumSubmit'] = df.shape[0] / len(df['item_id'].unique())
         StaticInformation['aveItemContainKnowledge'] = numKCs / len(df['item_id'].unique())
+
+        User_grouped=df.groupby(['user_id']) 
+        StaticInformation['maxUserSubmit'] = max(User_grouped.count()["inter_id"])
+        StaticInformation['minUserSubmit'] = min(User_grouped.count()["inter_id"])
+
+        Item_grouped=df.groupby(['item_id']) 
+        StaticInformation['maxItemSubmit'] = max(Item_grouped.count()["inter_id"])
+        StaticInformation['minItemSubmit'] = min(Item_grouped.count()["inter_id"])
+
+        StaticInformation['maxItemContainKnowledge'] = max(np.sum(QMatrix,-1))
+        StaticInformation['minItemContainKnowledge'] = min(np.sum(QMatrix,-1))
 
         DictList = [userInformation, knowledgeInformation]
 
