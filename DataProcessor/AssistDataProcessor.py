@@ -129,6 +129,8 @@ class _AssistDataProcessor:
         StaticInformation['maxItemContainKnowledge'] = max(np.sum(QMatrix,-1))
         StaticInformation['minItemContainKnowledge'] = min(np.sum(QMatrix,-1))
 
+        StaticInformation['Correctness'] = df.correct.sum() / df.correct.count()
+
         DictList = [userInformation, knowledgeInformation]
 
         df = df[['user_id', 'item_id', 'timestamp', 'correct']]
@@ -146,18 +148,26 @@ class _AssistDataProcessor:
         return df, sparse.csr_matrix(QMatrix), StaticInformation, DictList
 
 
-
-'''
-userLC = [10,20]
-problemLC = [10,20]
-#assistments12原始数据里的最值，可以注释，不要删
-low_time = "2012-09-01 00:00:00"
-high_time = "2013-09-01 00:00:00"
-timeLC = [low_time, high_time]
-a = _AssistDataProcessor(userLC, problemLC, timeLC, TmpDir = "../data")
-print('**************LC_params**************')
-printDict(a.LC_params)
-[df, QMatrix, StaticInformation, DictList] = a.loadLCData()
-print('**************StaticInformation**************')
-printDict(StaticInformation)
-'''
+if __name__ == "__main__":
+    #assistments12原始数据里的最值，可以注释，不要删
+    #low_time = "2012-09-01 00:00:00"
+    #high_time = "2013-09-01 00:00:00"
+    isTest = True
+    if isTest == True:
+        userLC = [10, 3000]
+        problemLC = [10, 3000]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2012-09-30 00:00:00"
+        timeLC = [low_time, high_time]
+    else:
+        userLC = [10, 3000]
+        problemLC = [10, 3000]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2013-01-01 00:00:00"
+        timeLC = [low_time, high_time]
+    a = _AssistDataProcessor(userLC, problemLC, timeLC, TmpDir = '../data')
+    print('**************LC_params**************')
+    printDict(a.LC_params)
+    [df, QMatrix, StaticInformation, DictList] = a.loadLCData()
+    print('**************StaticInformation**************')
+    printDict(StaticInformation)
