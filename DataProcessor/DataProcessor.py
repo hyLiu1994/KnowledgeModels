@@ -441,14 +441,15 @@ class _DataProcessor:
 			saveDict(length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
 
 		else:
+			length = {}
 			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X.npz')))
 			for agent in active_features:
+				if (agent == 'lasttime_0kcsingle') and (agent not in active_features):
+					continue
+				f = getFeaturesSuffix([agent])
 				single = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(f))))
 				sparse_df = sparse.hstack([sparse_df,single[:,4:]]).tocsr()
-			length = {}
-			for key,value in Length.items():
-				if key in active_features:
-					length[key] = value
+				length[agent] = loadDict(SaveDir,'Length-{:s}.json'.format(f))
 			sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
 			saveDict(length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
 
