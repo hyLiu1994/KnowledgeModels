@@ -167,63 +167,16 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset, item_num
 
-	def loadDAS3HData(self, trainRate               ):
+	def loadDAS3HData(self, trainRate):
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 		df = df.drop(['timestamp'],axis=1)                                                                        
 
-		data = df.groupby('user_id').apply(
-			lambda r: (r['skill_id_with_correct'].values,
-					   r['item_id'].values,
-					   r['correct'].values)
-		)
-		i = 0
-		users = []
-		items = []
-		corrects = []
-		for it in data:
-			if i%100 == 0:
-				print(i,'/',len(df))
-			i += 1
-			users.append(list(it[0]))
-			items.append(list(it[1]))
-			corrects.append(list(it[2]))
+		users = df['user_id'].unique()
+		num = len(users)
+		train = users[:int(num*0.8)]
+		test = users[int(num*0.8):]
 
-		def __to_dataset(data):
-			data = tf.ragged.constant(data)
-			data = tf.data.Dataset.from_tensor_slices(data)
-			data = data.map(lambda x: x)
-			return data
-
-		users = __to_dataset(users)
-		items = __to_dataset(items)
-		corrects = __to_dataset(corrects)
-
-		dataset = tf.data.Dataset.zip((users, items, corrects))
-		# dtype
-		dataset = dataset.map(lambda inputs, data, label: (tf.cast(inputs, dtype=tf.int32), tf.cast(data, dtype=tf.int32), tf.cast(label, dtype=tf.float32))
-							  )
-		# dim
-		dataset = dataset.map(lambda inputs, data, label: (tf.expand_dims(inputs, axis=-1), tf.expand_dims(data, axis=-1), tf.expand_dims(label, axis=-1))
-							  )
-		# concat
-		dataset = dataset.map(lambda inputs, data, label: (tf.concat([data, inputs], axis=-1), label)
-							  )
-
-		def __split_dataset(dataset, trainRate):
-			if tf.__version__ == '2.2.0':
-				data_size = tf.data.experimental.cardinality(dataset).numpy()
-			else:
-				data_size = dataset.cardinality().numpy()
-			train_size = int(data_size * trainRate)
-
-			train_dataset = dataset.take(train_size)
-			test_dataset = dataset.skip(train_size)
-			return train_dataset, test_dataset
-
-		train_dataset, test_dataset = __split_dataset(dataset, trainRate)
-		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
-		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
-		return train_dataset, test_dataset, item_num
+		return train, test
 
 	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
 		"""Build sparse features dataset from dense dataset and q-matrix.
@@ -525,6 +478,7 @@ if __name__ == "__main__":
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	print('**************StaticInformation**************')
 	printDict(StaticInformation)
+	a.loadDAS3HData(0.8)
 	
 
 	#hdu原始数据里的最值
