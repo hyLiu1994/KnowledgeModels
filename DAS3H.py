@@ -20,7 +20,7 @@ from DataProcessor import _DataProcessor
 # Location of libFM's compiled binary file
 os.environ['LIBFM_PATH'] = '~/libfm/bin/'
 
-def DAS3H(a, active, window_lengths, isKfold, model_params):
+def DAS3H(a, active, window_lengths, isKfold, model_params, FM_params):
 
 	prefix = ''
 	if set(active) == {'users', 'items'} and model_params['dim'] == 0:
@@ -79,6 +79,8 @@ def DAS3H(a, active, window_lengths, isKfold, model_params):
 			y_tests[run_id] = y_test
 			y_pred_tests[run_id] = y_pred_test
 	else:
+		prepareFolder(os.path.join(saveDir, str(0)))
+
 		users_train, users_test = a.loadDAS3HData(model_params['trainRate'])
 		X_train = X[np.where(np.isin(X[:,0].toarray().flatten(),users_train))]
 		y_train = X_train[:,3].toarray().flatten()
@@ -110,7 +112,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 	# model parameters
 	#######################################
 	model_params = {
-		'dim': 0,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -150,7 +152,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 
 	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = TmpDir)
 
-	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params)
+	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params, FM_params)
 
 
 	results={'LC_params':a.LC_params,'model_params':model_params,'FM_params':FM_params,'results':{}}
@@ -182,7 +184,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 
 	saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
 
-def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir):
+def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir, FM_params):
 	features_suffix = getFeaturesSuffix(active)
  
 	#######################################
@@ -262,7 +264,7 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 
 	saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
 
-def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir):
+def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir, FM_params):
 	features_suffix = getFeaturesSuffix(active)
 
 	#######################################
