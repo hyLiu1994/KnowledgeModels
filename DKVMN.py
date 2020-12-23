@@ -45,6 +45,7 @@ class DKVMN(tf.keras.Model):
         self.opti = tf.keras.optimizers.Adam()
         
         # metrics
+        self.metrics_format = "epoch,time,train_loss,train_acc,train_pre,train_rec,train_auc,train_mae,train_rmse,test_loss,test_acc,test_pre,test_rec,test_auc,test_mae,test_rmse"
         self.metrics_loss = tf.keras.metrics.BinaryCrossentropy()
 
         self.metrics_acc = tf.keras.metrics.BinaryAccuracy(threshold = self.threshold)
@@ -178,34 +179,46 @@ def get_last_epoch_data(model, dataset):
 def test(model, test_dataset):
     for data, label in test_dataset:
         model.metrics_step(data, label)
-    tf.print("test loss: ", model.metrics_loss.result(), 
-             "acc: ", model.metrics_acc.result(), 
-             "pre: ", model.metrics_pre.result(),
-             "rec: ", model.metrics_rec.result(),
-             "auc: ", model.metrics_auc.result(),
-             "mae: ", model.metrics_mae.result(),
-             "rmse: ", model.metrics_rmse.result(), output_stream=model.metrics_path)
-    model.resetMetrics()
+    
 
 @tf.function
 def train(epoch, model, train_dataset, test_dataset):
     element_num = tf.data.experimental.cardinality(train_dataset)
+    tf.print(model.metrics_format, output_stream=model.metrics_path)
     start = tf.timestamp()
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
         model.train_step(data, label)
         if tf.equal(tf.math.floormod(i+1, element_num), 0):
             end = tf.timestamp()
-            tf.print("epoch: ", tf.math.floordiv(i+1, element_num),
-                    "time: " , end - start,
-                    "acc: ", model.metrics_acc.result(), 
-                    "pre: ", model.metrics_pre.result(),
-                    "rec: ", model.metrics_rec.result(),
-                    "auc: ", model.metrics_auc.result(),
-                    "mae: ", model.metrics_mae.result(),
-                    "rmse: ", model.metrics_rmse.result(),
-                     end=",", output_stream=model.metrics_path)
+            train_loss, train_acc, train_pre, train_rec, train_auc, train_mae, train_rmse = model.metrics_loss.result(),  model.metrics_acc.result(),  model.metrics_pre.result(), model.metrics_rec.result(), model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result()
             model.resetMetrics()
+
             test(model, test_dataset)
+            test_loss, test_acc, test_pre, test_rec, test_auc, test_mae, test_rmse = model.metrics_loss.result(),  model.metrics_acc.result(),  model.metrics_pre.result(), model.metrics_rec.result(), model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result()
+
+            model.resetMetrics()
+            tf.print(tf.math.floordiv(i+1, element_num),
+                    end - start, 
+                    train_loss, train_acc, train_pre, train_rec, train_auc, train_mae, train_rmse,
+                    test_loss, test_acc, test_pre, test_rec, test_auc, test_mae, test_rmse,
+                    sep=',', output_stream=model.metrics_path)
+
+            tf.print("epoch: ", tf.math.floordiv(i+1, element_num),
+                    "time: ", end - start, 
+                    "train_loss: ", train_loss, 
+                    "train_acc: ", train_acc, 
+                    "train_pre: ", train_pre,
+                    "train_rec: ", train_rec,
+                    "train_auc: ", train_auc,
+                    "train_mae: ", train_mae,
+                    "train_rmse: ", train_rmse,
+                    "test_loss: ", test_loss, 
+                    "test_acc: ", test_acc, 
+                    "test_pre: ", test_pre,
+                    "test_rec: ", test_rec,
+                    "test_auc: ", test_auc,
+                    "test_mae: ", test_mae,
+                    "test_rmse: ", test_rmse)
             start = tf.timestamp()
 
 def runKDD(is_test=True):
@@ -215,7 +228,7 @@ def runKDD(is_test=True):
     userLC = [10,3000]
     problemLC = [10,5000]
     # algebra08原始数据里的最值，可以注释，不要删
-    low_time = "2008-09-08 14:46:48"
+    low_time = "2008-12-21 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
@@ -331,8 +344,7 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
-    runOJ(True)
-    # runAssist(True)
-    # runKDD(True)
+    runKDD(False)
+    # runOJ(True)
 
 
