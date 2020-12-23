@@ -148,6 +148,12 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 		high_time = "2009-07-06 18:02:12"
 		timeLC = [low_time, high_time]
 
+	userLC = [10, 1e9]
+	problemLC = [10, 1e9]
+	low_time = "2008-09-08 14:46:48"
+	high_time = "2009-07-06 18:02:12"
+	timeLC = [low_time, high_time]
+
 	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = TmpDir)
 
 	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params, FM_params)
@@ -182,7 +188,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 
 	saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
 
-def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir, FM_params):
+def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir):
 	features_suffix = getFeaturesSuffix(active)
  
 	#######################################
@@ -230,7 +236,7 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 
 	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = TmpDir)
 
-	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params)
+	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params, FM_params)
 
 
 	results={'LC_params':a.LC_params,'model_params':model_params,'FM_params':FM_params,'results':{}}
@@ -262,7 +268,7 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 
 	saveDict(results, saveDir, 'results'+getLegend(model_params)+'.json')
 
-def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir, FM_params):
+def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir):
 	features_suffix = getFeaturesSuffix(active)
 
 	#######################################
@@ -306,10 +312,16 @@ def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metri
 		low_time = "2012-09-01 00:00:00"
 		high_time = "2013-01-01 00:00:00"
 		timeLC = [low_time, high_time]
+
+	userLC = [10, 1e9]
+	problemLC = [10, 1e9]
+	low_time = "2012-09-01 00:00:00"
+	high_time = "2013-09-01 00:00:00"
+	timeLC = [low_time, high_time]
 	
 	a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = TmpDir)
 
-	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params)
+	y_tests, y_pred_tests, saveDir = DAS3H(a, active, window_lengths, isKfold, model_params, FM_params)
 
 
 	results={'LC_params':a.LC_params,'model_params':model_params,'FM_params':FM_params,'results':{}}
@@ -343,7 +355,7 @@ def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metri
 
 if __name__ == "__main__":
 	Features = {}
-	Features['users'] = False #用于das3h中特征
+	Features['users'] = True #用于das3h中特征
 	Features['items'] = True #用于das3h中特征
 	Features['skills'] = True
 	Features['lasttime_0kcsingle'] = False
@@ -355,16 +367,16 @@ if __name__ == "__main__":
 	Features['interval_3sequence'] = False
 	Features['wins_1kc'] = False
 	Features['wins_2items'] = False
-	Features['wins_3das3h'] = True #用于das3h中特征
-	Features['wins_4das3hkc'] = False #用于das3h中特征
+	Features['wins_3das3h'] = False #用于das3h中特征
+	Features['wins_4das3hkc'] = True #用于das3h中特征
 	Features['wins_5das3hitems'] = False #用于das3h中特征
 	Features['fails_1kc'] = False
 	Features['fails_2items'] = False
-	Features['fails_3das3h'] = True
+	Features['fails_3das3h'] = False
 	Features['attempts_1kc'] = False 
 	Features['attempts_2items'] = False
 	Features['attempts_3das3h'] = False #用于das3h中特征
-	Features['attempts_4das3hkc'] = False #用于das3h中特征
+	Features['attempts_4das3hkc'] = True #用于das3h中特征
 	Features['attempts_5das3hitems'] = False #用于das3h中特征
 
 	window_lengths = [3600*24*30*365]
@@ -401,6 +413,6 @@ if __name__ == "__main__":
 	'tf_AUC_1000': tf.keras.metrics.AUC(num_thresholds=1000)
 	}
 
-	runKDD(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
+	#runKDD(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
 	#runOJ(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
-	#runAssist(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
+	runAssist(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
