@@ -24,6 +24,7 @@ class DKVMN(tf.keras.Model):
         self.problem_embed = tf.keras.layers.Embedding(input_dim=problem_num+1, output_dim=mk_dim)
         self.problem_label_embed = tf.keras.layers.Embedding(input_dim=2*problem_num+1, output_dim=mv_dim, mask_zero=False)
         self.mk = self.add_weight(name="mk", shape=(self.m_N, self.mk_dim))
+        self.mv = self.add_weight(name="mv", shape=(self.m_N, self.mk_dim))
 
         self.dense_f = tf.keras.layers.Dense(units=50, activation="tanh")
         self.dense_p = tf.keras.layers.Dense(units=1, activation="sigmoid")
@@ -47,7 +48,6 @@ class DKVMN(tf.keras.Model):
         self.metrics_auc = tf.keras.metrics.AUC()
         self.metrics_auc_1000 = tf.keras.metrics.AUC(num_thresholds=1000)
 
-
     def resetMetrics(self):
         self.metrics_loss.reset_states()
         self.metrics_accuracy.reset_states()
@@ -59,9 +59,6 @@ class DKVMN(tf.keras.Model):
         self.metrics_auc.reset_states()
         self.metrics_auc_1000.reset_states()
         return 
-    def get_initial_state(self, inputs):
-        init_mv = tf.zeros(shape=(tf.shape(inputs)[0], self.m_N, self.mv_dim), dtype=tf.float32)
-        return init_mv
 
     def get_p_t(self, k_t, w_t, mv_tm1):
         r_t = tf.matmul(w_t, mv_tm1)
@@ -123,7 +120,7 @@ class DKVMN(tf.keras.Model):
 
     def call(self, inputs):
         time_inputs = tf.transpose(inputs, perm=[1, 0, 2])
-        state = self.get_initial_state(inputs)
+        state = tf.tile(tf.expand_dims(self.mv, axis=0), [tf.shape(inputs)[0], 1, 1])
         pred = tf.TensorArray(dtype=tf.float32, size=tf.shape(time_inputs)[0])
         for i in tf.range(tf.shape(time_inputs)[0]):
             p_t, state = self.time_step(time_inputs[i], state)
@@ -232,7 +229,7 @@ def runKDD():
     low_time = "2008-09-08 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
-    a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./data")
+    a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
 
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'dkt')
@@ -367,9 +364,13 @@ def runAssist():
     [temp['tf_Accuracy'],temp['tf_Precision'],temp['tf_Recall'],temp['tf_MSE'],temp['tf_MAE'],temp['tf_RMSE'],temp['tf_AUC'],temp['tf_AUC_1000']] = get_last_epoch_data(model, test_dataset)
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
-    
+def set_run_eagerly(is_eager=False):
+    if tf.__version__ == "2.2.0":
+        tf.config.experimental_run_functions_eagerly(is_eager)
+    else:
+        tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
-    tf.config.run_functions_eagerly(True)
+    set_run_eagerly(True)
     runKDD()
 
 
