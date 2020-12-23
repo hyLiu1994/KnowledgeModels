@@ -87,7 +87,7 @@ def DAS3H(a, active, window_lengths, isKfold, model_params, FM_params):
 
 		if model_params['dim'] == 0:
 			print('fitting...')
-			model = LogisticRegression(solver="newton-cg", max_iter=400)
+			model = LogisticRegression(solver="newton-cg", max_iter=model_params['iter'])
 			model.fit(X_train[:,4:], y_train) # the 5 first columns are the non-sparse dataset
 			y_pred_test = model.predict_proba(X_test[:,4:])[:, 1]
 		else:
@@ -113,7 +113,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
-		'iter': 5000,
+		'iter': 2000,
 		'active_features': features_suffix
 	}
 
@@ -343,9 +343,9 @@ def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metri
 
 if __name__ == "__main__":
 	Features = {}
-	Features['users'] = True #用于das3h中特征
+	Features['users'] = False #用于das3h中特征
 	Features['items'] = True #用于das3h中特征
-	Features['skills'] = False
+	Features['skills'] = True
 	Features['lasttime_0kcsingle'] = False
 	Features['lasttime_1kc'] = False
 	Features['lasttime_2items'] = False
@@ -355,12 +355,12 @@ if __name__ == "__main__":
 	Features['interval_3sequence'] = False
 	Features['wins_1kc'] = False
 	Features['wins_2items'] = False
-	Features['wins_3das3h'] = False #用于das3h中特征
+	Features['wins_3das3h'] = True #用于das3h中特征
 	Features['wins_4das3hkc'] = False #用于das3h中特征
 	Features['wins_5das3hitems'] = False #用于das3h中特征
 	Features['fails_1kc'] = False
 	Features['fails_2items'] = False
-	Features['fails_3das3h'] = False
+	Features['fails_3das3h'] = True
 	Features['attempts_1kc'] = False 
 	Features['attempts_2items'] = False
 	Features['attempts_3das3h'] = False #用于das3h中特征
@@ -402,3 +402,5 @@ if __name__ == "__main__":
 	}
 
 	runKDD(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
+	#runOJ(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
+	#runAssist(active_features, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_tf1, metrics_tf2, TmpDir)
