@@ -79,8 +79,6 @@ def DAS3H(a, active, window_lengths, isKfold, model_params, FM_params):
 			y_tests[run_id] = y_test
 			y_pred_tests[run_id] = y_pred_test
 	else:
-		prepareFolder(os.path.join(saveDir, str(0)))
-
 		users_train, users_test = a.loadDAS3HData(model_params['trainRate'])
 		X_train = X[np.where(np.isin(X[:,0].toarray().flatten(),users_train))]
 		y_train = X_train[:,3].toarray().flatten()
@@ -96,7 +94,7 @@ def DAS3H(a, active, window_lengths, isKfold, model_params, FM_params):
 			fm = pywFM.FM(**FM_params)
 			model = fm.run(X_train[:,4:], y_train, X_test[:,4:], y_test)
 			y_pred_test = np.array(model.predictions)
-			model.rlog.to_csv(os.path.join(saveDir, str(0), 'rlog.csv'))
+			model.rlog.to_csv(os.path.join(saveDir, 'rlog'+getLegend(model_params)+'.csv'))
 
 		y_tests[0] = y_test
 		y_pred_tests[0] = y_pred_test
@@ -115,7 +113,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
-		'iter': 300,
+		'iter': 5000,
 		'active_features': features_suffix
 	}
 
