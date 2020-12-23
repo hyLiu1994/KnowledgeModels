@@ -45,7 +45,7 @@ def DAS3H(a, active, window_lengths, isKfold, model_params):
 
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 
-	saveDir = os.path.join(a.LCDataDir, 'das3h', prefix)
+	saveDir = os.path.join(a.LCDataDir, 'das3h', prefix+'_isKfold_'+str(isKfold)[0])
 	prepareFolder(saveDir)
 
 	y_tests = {}
@@ -79,7 +79,25 @@ def DAS3H(a, active, window_lengths, isKfold, model_params):
 			y_tests[run_id] = y_test
 			y_pred_tests[run_id] = y_pred_test
 	else:
-		trainRate = 0.8
+		users_train, users_test = a.loadDAS3HData(model_params['trainRate'])
+		X_train = X[np.where(np.isin(X[:,0].toarray().flatten(),users_train))]
+		y_train = X_train[:,3].toarray().flatten()
+		X_test = X[np.where(np.isin(X[:,0].toarray().flatten(),users_test))]
+		y_test = X_test[:,3].toarray().flatten()
+
+		if model_params['dim'] == 0:
+			print('fitting...')
+			model = LogisticRegression(solver="newton-cg", max_iter=400)
+			model.fit(X_train[:,4:], y_train) # the 5 first columns are the non-sparse dataset
+			y_pred_test = model.predict_proba(X_test[:,4:])[:, 1]
+		else:
+			fm = pywFM.FM(**FM_params)
+			model = fm.run(X_train[:,4:], y_train, X_test[:,4:], y_test)
+			y_pred_test = np.array(model.predictions)
+			model.rlog.to_csv(os.path.join(saveDir, str(0), 'rlog.csv'))
+
+		y_tests[0] = y_test
+		y_pred_tests[0] = y_pred_test
 
 	return y_tests, y_pred_tests, saveDir
 
@@ -94,6 +112,7 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 	model_params = {
 		'dim': 0,
 		'kFold': 5,
+		'trainRate':0.8,
 		'iter': 300,
 		'active_features': features_suffix
 	}
@@ -172,6 +191,7 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 	model_params = {
 		'dim': 0,
 		'kFold': 5,
+		'trainRate':0.8,
 		'iter': 300,
 		'active_features': features_suffix
 	}
@@ -352,8 +372,8 @@ if __name__ == "__main__":
 
 	active_features = [key for key, value in Features.items() if value]
 
-	isTest = False
-	isKfold = True
+	isTest = True
+	isKfold = False
 	# TmpDir = "./DataProcessor/data"
 	TmpDir = "./data"
 
