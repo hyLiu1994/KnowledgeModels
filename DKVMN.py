@@ -17,8 +17,6 @@ class DKVMN(tf.keras.Model):
     def __init__(self, model_params):
         super(DKVMN, self).__init__()
 
-
-
         self.data_shape = model_params['data_shape']
         self.problem_num = model_params['problem_num']
         self.m_N = model_params['m_N']
@@ -256,7 +254,7 @@ def runKDD(is_test=True):
     model_params['threshold'] = 0.5
     model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
     model_params['problem_num'] = problem_num
-    model_params['epoch'] = 2
+    model_params['epoch'] = 200
     model_params['metrics_path'] = saveDir + '/metrics.csv'
 
     model = DKVMN(model_params)
@@ -314,7 +312,7 @@ def runOJ(is_test=True):
     model_params['threshold'] = 0.5
     model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
     model_params['problem_num'] = problem_num
-    model_params['epoch'] = 2
+    model_params['epoch'] = 200
     model_params['metrics_path'] = saveDir + '/metrics.csv'
 
     model = DKVMN(model_params)
@@ -337,6 +335,63 @@ def runOJ(is_test=True):
     model_params.pop("metrics_path")
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
+def runAssist(is_test=True):
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [10,3000]
+    problemLC = [10,3000]
+    #hdu原始数据里的最值，可以注释，不要删
+    low_time = "2012-09-01 00:00:00" 
+    high_time = "2012-09-30 00:00:00"
+    timeLC = [low_time, high_time]
+    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = "./DataProcessor/data")
+
+    LCDataDir = data_processor.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'DKVMN')
+    print("===================================")
+    print("metrics save path: ", saveDir)
+    print("===================================")
+    prepareFolder(saveDir)
+    LC_params = data_processor.LC_params
+
+    dataset_params = copy.deepcopy(LC_params)
+    dataset_params["trainRate"] = 0.8
+    dataset_params["batch_size"] = 32
+
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData(dataset_params)
+    #######################################
+    # model parameters
+    #######################################
+    model_params = {}
+    model_params['m_N'] = 40
+    model_params['mk_dim'] = 60
+    model_params['mv_dim'] = 60
+    model_params['threshold'] = 0.5
+    model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
+    model_params['problem_num'] = problem_num
+    model_params['epoch'] = 200
+    model_params['metrics_path'] = saveDir + '/metrics.csv'
+
+    model = DKVMN(model_params)
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    #######################################
+    # train parameters
+    #######################################
+    train(epoch=model_params['epoch'], model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+
+    #######################################
+    # save model
+    #######################################
+    results={'LC_params':LC_params, 'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'], temp['tf_Precision'], temp['tf_Recall'], temp['tf_AUC'], temp['tf_MAE'], temp['tf_RMSE']] = get_last_epoch_data(model, test_dataset)
+
+    model_params.pop("metrics_path")
+    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 def set_run_eagerly(is_eager=False):
     if tf.__version__ == "2.2.0":
         tf.config.experimental_run_functions_eagerly(is_eager)
@@ -344,7 +399,9 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
+    
+    runAssist(False)
+    runOJ(False)
     runKDD(False)
-    # runOJ(True)
 
 
