@@ -179,7 +179,8 @@ if __name__ == "__main__":
 	#algebra08原始数据里的最值
 	#low_time = "2008-09-08 14:46:48"
 	#high_time = "2009-07-06 18:02:12"
-	isTest = False
+	isTest = Tue
+	isAll = False
 
 	if isTest == True:
 		userLC = [10, 3000]
@@ -188,12 +189,18 @@ if __name__ == "__main__":
 		high_time = "2009-01-01 00:00:00"
 		timeLC = [low_time, high_time]
 	else:
-		userLC = [10, 3000]
-		problemLC = [10, 5000]
+		userLC = [30, 3000]
+		problemLC = [30, 1e9]
 		low_time = "2008-09-08 14:46:48"
 		high_time = "2009-07-06 18:02:12"
 		timeLC = [low_time, high_time]
-	a = _KDDCupDataProcessor(userLC, problemLC, timeLC, TmpDir = '../data')
+	if isAll == True:
+		userLC = [10, 1e9]
+		problemLC = [10, 1e9]
+		low_time = "2008-09-08 14:46:48"
+		high_time = "2009-07-06 18:02:12"
+		timeLC = [low_time, high_time]
+	a = _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = 'algebra08', TmpDir = '../data')
 	print('**************LC_params**************')
 	printDict(a.LC_params)
 	[df, QMatrix, StaticInformation, DictList] = a.loadLCData()

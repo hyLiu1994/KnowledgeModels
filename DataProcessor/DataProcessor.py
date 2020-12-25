@@ -523,6 +523,8 @@ if __name__ == "__main__":
 	
 	
 	isTest = True
+	isAll = False
+
 	if isTest == True:
 		userLC = [10, 3000]
 		problemLC = [10, 5000]
@@ -530,8 +532,14 @@ if __name__ == "__main__":
 		high_time = "2009-01-01 00:00:00"
 		timeLC = [low_time, high_time]
 	else:
-		userLC = [10, 3000]
-		problemLC = [10, 5000]
+		userLC = [30, 3000]
+		problemLC = [30, 1e9]
+		low_time = "2008-09-08 14:46:48"
+		high_time = "2009-07-06 18:02:12"
+		timeLC = [low_time, high_time]
+	if isAll == True:
+		userLC = [10, 1e9]
+		problemLC = [10, 1e9]
 		low_time = "2008-09-08 14:46:48"
 		high_time = "2009-07-06 18:02:12"
 		timeLC = [low_time, high_time]
@@ -550,17 +558,17 @@ if __name__ == "__main__":
 	'''
 	isTest = True
 	if isTest == True:
-		userLC = [10, 500, 0.1, 1]
-		problemLC = [10, 500, 0, 1]
-		low_time = "2018-11-22 00:00:00"
-		high_time = "2018-11-29 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [10, 500, 0.1, 1]
-		problemLC = [10, 500, 0, 1]
-		low_time = "2018-06-01 00:00:00"
-		high_time = "2018-11-29 00:00:00"
-		timeLC = [low_time, high_time]
+        userLC = [10, 500, 0.1, 1]
+        problemLC = [10, 500, 0, 1]
+        low_time = "2018-11-22 00:00:00"
+        high_time = "2018-11-29 00:00:00"
+        timeLC = [low_time, high_time]
+    else:
+        userLC = [30, 3600, 0.1, 1]
+        problemLC = [30, 1e9, 0, 1]
+        low_time = "2018-06-01 00:00:00"
+        high_time = "2018-11-29 00:00:00"
+        timeLC = [low_time, high_time]
 	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = '../data')
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	print('**************StaticInformation**************')
@@ -569,18 +577,25 @@ if __name__ == "__main__":
 
 	'''
 	isTest = True
-	if isTest == True:
-		userLC = [10, 3000]
-		problemLC = [10, 3000]
-		low_time = "2012-09-01 00:00:00"
-		high_time = "2012-09-30 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [10, 3000]
-		problemLC = [10, 3000]
-		low_time = "2012-09-01 00:00:00"
-		high_time = "2013-01-01 00:00:00"
-		timeLC = [low_time, high_time]
+    isAll = False
+    if isTest == True:
+        userLC = [10, 300]
+        problemLC = [10, 300]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2012-09-10 00:00:00"
+        timeLC = [low_time, high_time]
+    else:
+        userLC = [10, 3000]
+        problemLC = [10, 3000]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2012-09-30 00:00:00"
+        timeLC = [low_time, high_time]
+    if isAll == True:
+        userLC = [10, 1e9]
+        problemLC = [10, 1e9]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2013-09-01 00:00:00"
+        timeLC = [low_time, high_time]
 	a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = '../data')
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	print('**************StaticInformation**************')

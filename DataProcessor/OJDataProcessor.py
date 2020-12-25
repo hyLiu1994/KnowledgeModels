@@ -195,8 +195,8 @@ if __name__ == "__main__":
         high_time = "2018-11-29 00:00:00"
         timeLC = [low_time, high_time]
     else:
-        userLC = [10, 500, 0.1, 1]
-        problemLC = [10, 500, 0, 1]
+        userLC = [30, 3600, 0.1, 1]
+        problemLC = [30, 1e9, 0, 1]
         low_time = "2018-06-01 00:00:00"
         high_time = "2018-11-29 00:00:00"
         timeLC = [low_time, high_time]

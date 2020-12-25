@@ -153,17 +153,24 @@ if __name__ == "__main__":
     #low_time = "2012-09-01 00:00:00"
     #high_time = "2013-09-01 00:00:00"
     isTest = True
+    isAll = False
     if isTest == True:
-        userLC = [10, 3000]
-        problemLC = [10, 3000]
+        userLC = [10, 300]
+        problemLC = [10, 300]
         low_time = "2012-09-01 00:00:00"
-        high_time = "2012-09-30 00:00:00"
+        high_time = "2012-09-10 00:00:00"
         timeLC = [low_time, high_time]
     else:
         userLC = [10, 3000]
         problemLC = [10, 3000]
         low_time = "2012-09-01 00:00:00"
-        high_time = "2013-01-01 00:00:00"
+        high_time = "2012-09-30 00:00:00"
+        timeLC = [low_time, high_time]
+    if isAll == True:
+        userLC = [10, 1e9]
+        problemLC = [10, 1e9]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2013-09-01 00:00:00"
         timeLC = [low_time, high_time]
     a = _AssistDataProcessor(userLC, problemLC, timeLC, TmpDir = '../data')
     print('**************LC_params**************')
