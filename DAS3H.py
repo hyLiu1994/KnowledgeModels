@@ -219,7 +219,6 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 	#hdu原始数据里的最值，可以注释，不要删
 	#low_time = "2018-06-01 00:00:00" 
 	#high_time = "2018-11-29 00:00:00"
-	isTest = False
 
 	if isTest == True:
 		userLC = [10, 500, 0.1, 1]
@@ -299,7 +298,6 @@ def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metri
 	#assistments12原始数据里的最值，可以注释，不要删
 	#low_time = "2012-09-01 00:00:00"
 	#high_time = "2013-09-01 00:00:00"
-	isTest = True
 	if isTest == True:
 		userLC = [10, 3000]
 		problemLC = [10, 3000]
