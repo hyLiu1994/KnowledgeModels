@@ -135,6 +135,9 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 	#low_time = "2008-09-08 14:46:48"
 	#high_time = "2009-07-06 18:02:12"
 
+	isTest = True
+	isAll = False
+
 	if isTest == True:
 		userLC = [10, 3000]
 		problemLC = [10, 5000]
@@ -142,8 +145,14 @@ def runKDD(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_
 		high_time = "2009-01-01 00:00:00"
 		timeLC = [low_time, high_time]
 	else:
-		userLC = [10, 3000]
-		problemLC = [10, 5000]
+		userLC = [30, 3000]
+		problemLC = [30, 1e9]
+		low_time = "2008-09-08 14:46:48"
+		high_time = "2009-07-06 18:02:12"
+		timeLC = [low_time, high_time]
+	if isAll == True:
+		userLC = [10, 1e9]
+		problemLC = [10, 1e9]
 		low_time = "2008-09-08 14:46:48"
 		high_time = "2009-07-06 18:02:12"
 		timeLC = [low_time, high_time]
@@ -220,18 +229,19 @@ def runOJ(active, window_lengths, isTest, isKfold, metrics1, metrics2, metrics_t
 	#low_time = "2018-06-01 00:00:00" 
 	#high_time = "2018-11-29 00:00:00"
 
+	isTest = True
 	if isTest == True:
-		userLC = [10, 500, 0.1, 1]
-		problemLC = [10, 500, 0, 1]
-		low_time = "2018-11-22 00:00:00"
-		high_time = "2018-11-29 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [10, 500, 0.1, 1]
-		problemLC = [10, 500, 0, 1]
-		low_time = "2018-06-01 00:00:00"
-		high_time = "2018-11-29 00:00:00"
-		timeLC = [low_time, high_time]
+        userLC = [10, 500, 0.1, 1]
+        problemLC = [10, 500, 0, 1]
+        low_time = "2018-11-22 00:00:00"
+        high_time = "2018-11-29 00:00:00"
+        timeLC = [low_time, high_time]
+    else:
+        userLC = [30, 3600, 0.1, 1]
+        problemLC = [30, 1e9, 0, 1]
+        low_time = "2018-06-01 00:00:00"
+        high_time = "2018-11-29 00:00:00"
+        timeLC = [low_time, high_time]
 
 	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = TmpDir)
 
@@ -298,18 +308,30 @@ def runAssist(active, window_lengths, isTest, isKfold, metrics1, metrics2, metri
 	#assistments12原始数据里的最值，可以注释，不要删
 	#low_time = "2012-09-01 00:00:00"
 	#high_time = "2013-09-01 00:00:00"
-	if isTest == True:
-		userLC = [10, 3000]
-		problemLC = [10, 3000]
-		low_time = "2012-09-01 00:00:00"
-		high_time = "2012-09-30 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [10, 3000]
-		problemLC = [10, 3000]
-		low_time = "2012-09-01 00:00:00"
-		high_time = "2013-01-01 00:00:00"
-		timeLC = [low_time, high_time]
+	isTest = False
+    isAll = False
+    if isTest == True:
+        userLC = [10, 300]
+        problemLC = [10, 300]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2012-09-10 00:00:00"
+        timeLC = [low_time, high_time]
+    else:
+        userLC = [10, 3000]
+        problemLC = [10, 3000]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2012-09-30 00:00:00"
+        timeLC = [low_time, high_time]
+    if isAll == True:
+        userLC = [10, 1e9]
+        problemLC = [10, 1e9]
+        low_time = "2012-09-01 00:00:00"
+        high_time = "2013-09-01 00:00:00"
+        timeLC = [low_time, high_time]
+	a = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = '../data')
+	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
+	print('**************StaticInformation**************')
+	printDict(StaticInformation)
 
 	userLC = [10, 1e9]
 	problemLC = [10, 1e9]
