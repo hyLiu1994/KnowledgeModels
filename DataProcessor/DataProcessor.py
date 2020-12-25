@@ -49,7 +49,9 @@ class _DataProcessor:
 		saveDict(dict_data,self.LCDataDir, 'splitedInformation_kFold('+str(kFold)+').json')
 		return dict_data
 
-	def loadDKTbatchData(self, trainRate, batch_size):
+	def loadDKTbatchData(self, dataset_params):
+		trainRate = dataset_params["trainRate"]
+		batch_size = dataset_params["batch_size"]
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 		df = df.drop(['timestamp'],axis=1)
 		item_num = StaticInformation['itemNum']
@@ -107,7 +109,9 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset, item_num
 
-	def loadDKVMNbatchData(self, trainRate, batch_size):
+	def loadDKVMNbatchData(self, dataset_params):
+		trainRate = dataset_params["trainRate"]
+		batch_size = dataset_params["batch_size"]
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 		df = df.drop(['timestamp'],axis=1)
 		item_num = StaticInformation['itemNum']
