@@ -284,11 +284,10 @@ class _DataProcessor:
 		num = len(users)
 		train = users[:int(num*0.8)]
 		test = users[int(num*0.8):]
-
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
 		return sparse_df, train, test
 
-	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e8], all_features = ['users', 'items', 'skills', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'fails_1kc', 'fails_2items', 'attempts_1kc', 'attempts_2items']):
+	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
 		"""Build sparse features dataset from dense dataset and q-matrix.
 
 		Arguments:
@@ -432,17 +431,7 @@ class _DataProcessor:
 						interval_2items[l] = t - q_item[stud_id, item_id].get_last()
 
 						wins_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id, "correct"].get_counters(t)
-						wins_2items[l] = q_item[stud_id, item_id, "correct"].get_counters(t)
-
-						
-						
-						'''if skill_id in dict_q_mat[item_id]:
-							print('before before push',item_id,q_item[stud_id, item_id, "correct"].get_counters(t),wins_2items[l])
-						if l==10:
-							return
-						'''
-						
-						
+						wins_2items[l] = q_item[stud_id, item_id, "correct"].get_counters(t)						
 
 						attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id].get_counters(t)
 						attempts_2items[l] = q_item[stud_id, item_id].get_counters(t)
@@ -524,6 +513,43 @@ class _DataProcessor:
 			saveDict(length, SaveDir, 'Length-{:s}.json'.format(features_suffix))
 
 		return sparse_df, length
+
+	def loadKTMData(self, dataset_params):
+		def to_dataset(data):
+		    data = tf.ragged.constant(data)
+		    data = tf.data.Dataset.from_tensor_slices(data)
+		    data = data.map(lambda x: x)
+		    return data
+		def get_data_size(dataset):
+		    if tf.__version__ == "2.2.0":
+		        data_size = tf.data.experimental.cardinality(dataset).numpy()
+		    else:
+		        data_size = dataset.cardinality().numpy()
+		    return data_size
+		def split_dataset(dataset, train_fraction):
+			data_size = get_data_size(dataset)
+			train_size = int(data_size * train_fraction)
+			train_size = train_size
+			test_size = data_size - train_size
+			train_dataset = dataset.take(train_size)
+			test_dataset = dataset.skip(train_size)
+			return train_dataset, test_dataset
+		active = dataset_params['active']
+		window_lengths = dataset_params['window_lengths'] 
+		batch_size = dataset_params['batch_size']
+		train_fraction = dataset_params['train_fraction']
+		raw_data, length = self.loadSparseDF(active_features=active, window_lengths=window_lengths)
+		raw_data = raw_data.toarray()
+		print(raw_data[10].astype(np.int32))
+		os._exit(0)
+		data = to_dataset(raw_data[:, 4:])
+		label = to_dataset(raw_data[:, 3])
+		dataset = tf.data.Dataset.zip((data, label))
+		dataset = dataset.map(lambda data, label: (tf.cast(data, dtype=tf.float32), tf.cast(label, dtype=tf.float32)))
+		train_dataset, test_dataset = split_dataset(dataset, train_fraction=0.8)
+		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
+		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
+		return train_dataset, test_dataset
 
 	def getExtraStatics(self):
 
