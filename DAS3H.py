@@ -252,7 +252,7 @@ def runOJ(datasetName = 'hdu', isTest = True, isAll = False, TmpDir = "./data"):
 	a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = TmpDir)
 	return a
 
-def runAssist(datasetName = 'assist12', isTest = True, isAll = False, TmpDir = "./data"):
+def runAssist(datasetName = 'assistments12', isTest = True, isAll = False, TmpDir = "./data"):
 	#######################################
 	# LC parameters
 	#######################################
@@ -332,6 +332,6 @@ if __name__ == "__main__":
 
 	#a = runKDD(datasetName = 'algebra05', isTest = True, isAll = True, TmpDir = TmpDir)
 	#a = runOJ(isTest = True, isAll = True, TmpDir = TmpDir)
-	a = runAssist(isTest = False, isAll = True, TmpDir = TmpDir)
+	a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 	results = DAS3H(a, active_features, isKfold, model_params)
 	printDict(results['results'])

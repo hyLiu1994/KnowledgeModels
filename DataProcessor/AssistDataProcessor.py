@@ -9,7 +9,7 @@ from sklearn.model_selection import KFold
 from public import *
 
 class _AssistDataProcessor:
-    def __init__(self, userLC, problemLC, timeLC, drop_duplicates = True, remove_nan_skills = True, datasetName = 'assist12', TmpDir = "./data/"):
+    def __init__(self, userLC, problemLC, timeLC, drop_duplicates = True, remove_nan_skills = True, datasetName = 'assistments12', TmpDir = "./data/"):
 
         self.datasetName = datasetName
 
