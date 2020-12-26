@@ -20,7 +20,7 @@ from DataProcessor import _DataProcessor
 # Location of libFM's compiled binary file
 os.environ['LIBFM_PATH'] = '~/libfm/bin/'
 
-def DAS3H(a, active, isKfold, model_params):
+def DAS3H(a, active, tw, isKfold, model_params):
 
 	dim = model_params['dim']
 
@@ -33,6 +33,7 @@ def DAS3H(a, active, isKfold, model_params):
 		'k2': dim
 	}
 
+	print(active)
 	prefix = ''
 	if set(active) == {'users', 'items'} and dim == 0:
 		prefix = 'IRT'
@@ -42,10 +43,19 @@ def DAS3H(a, active, isKfold, model_params):
 		prefix = 'AFM'
 	elif set(active) == {'skills', 'wins', 'fails'}:
 		prefix = 'PFA'
-	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts', 'tw_kc'}:
+	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts'} and ( tw == 'tw_kc'):
 		prefix = 'DAS3H'
-	elif set(active) == {'users', 'items', 'wins', 'attempts', 'tw_items'}:
+	elif set(active) == {'users', 'items', 'wins', 'attempts'} and ( tw == 'tw_items'):
 		prefix = 'DASH'
+	else:
+		for f in active:
+			prefix += f[0]
+		if tw == 'tw_kc':
+			prefix += 't1'
+		else:
+			prefix += 't2'
+	print(prefix)
+
 
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	X, users_train, users_test = a.loadDAS3HData(active, features_suffix, 0.8, tw=tw)
@@ -98,11 +108,11 @@ def DAS3H(a, active, isKfold, model_params):
 			if model_params['dim'] == 0:
 				print('fitting...')
 				model = LogisticRegression(solver="newton-cg", max_iter=400)
-				model.fit(X_train[:,4:], y_train) # the 5 first columns are the non-sparse dataset
-				y_pred_test = model.predict_proba(X_test[:,4:])[:, 1]
+				model.fit(X_train[:,5:], y_train) # the 5 first columns are the non-sparse dataset
+				y_pred_test = model.predict_proba(X_test[:,5:])[:, 1]
 			else:
 				fm = pywFM.FM(**FM_params)
-				model = fm.run(X_train[:,4:], y_train, X_test[:,4:], y_test)
+				model = fm.run(X_train[:,5:], y_train, X_test[:,5:], y_test)
 				y_pred_test = np.array(model.predictions)
 				model.rlog.to_csv(os.path.join(saveDir, str(run_id), 'rlog.csv'))
 
@@ -285,20 +295,22 @@ if __name__ == "__main__":
 	Features = {}
 	Features['users'] = True #用于das3h中特征
 	Features['items'] = True #用于das3h中特征
-	Features['skills'] = False
-	Features['wins'] = False
+	Features['skills'] = True
+	Features['wins'] = True
 	Features['fails'] = False
-	Features['attempts'] = False
-	Features['tw_kc'] = False
-	Features['tw_items'] = False
+	Features['attempts'] = True
+	
+	Features2 = {}
+	Features2['tw_kc'] = True
+	Features2['tw_items'] = False
 	all_features = ['users', 'items', 'skills', 'wins', 'fails', 'attempts']
 	active_features = [key for key, value in Features.items() if value]
 
 	features_suffix = ''.join([features[0] for features in active_features])
-	if Features["tw_kc"]:
+	if Features2["tw_kc"]:
 		features_suffix += 't1'
 		tw = "tw_kc"
-	elif Features["tw_items"]:
+	elif Features2["tw_items"]:
 		features_suffix += 't2'
 		tw = "tw_items"
 	else:
@@ -331,7 +343,7 @@ if __name__ == "__main__":
 	isKfold = False
 
 	#a = runKDD(datasetName = 'algebra05', isTest = True, isAll = True, TmpDir = TmpDir)
-	#a = runOJ(isTest = True, isAll = True, TmpDir = TmpDir)
-	a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
-	results = DAS3H(a, active_features, isKfold, model_params)
+	a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
+	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
