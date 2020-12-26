@@ -236,7 +236,6 @@ def runOJ(datasetName = 'hdu', isTest = True, isAll = False, TmpDir = "./data"):
 	#low_time = "2018-06-01 00:00:00" 
 	#high_time = "2018-11-29 00:00:00"
 
-	isTest = True
 	if isTest == True:
 		userLC = [10, 500, 0.1, 1]  
 		problemLC = [10, 500, 0, 1]
