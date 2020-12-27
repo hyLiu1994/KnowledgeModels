@@ -243,7 +243,7 @@ class _DataProcessor:
 						attempts[l] = np.log(1 + np.array(q[stud_id, item_id].get_counters(t)))
 						q[stud_id, item_id].push(t)
 				else:
-					attempts = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),0)[:-1],skills_temp)
+					attempts = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),0)[:-1],skills_temp.toarray())
 				X['attempts'] = sparse.vstack([X['attempts'],sparse.csr_matrix(attempts)])
 			if "wins" in active_features:
 				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
@@ -262,13 +262,17 @@ class _DataProcessor:
 						if correct:
 							q[stud_id, item_id, "correct"].push(t)
 				else:
-					wins = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
-						np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+					'''
+					print(np.zeros(skills_temp.shape[1]))
+					print(skills_temp)
+					print(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())))
+					'''
+					wins = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp.toarray())
+
 				X['wins'] = sparse.vstack([X['wins'],sparse.csr_matrix(wins)])
 			if "fails" in active_features:
 				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
-				fails = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
-					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+				fails = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp.toarray())
 				X["fails"] = sparse.vstack([X["fails"],sparse.csr_matrix(fails)])
 			if verbose:
 				print(X["df"].shape)

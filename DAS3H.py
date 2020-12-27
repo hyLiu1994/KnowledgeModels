@@ -293,15 +293,15 @@ def runAssist(datasetName = 'assistments12', isTest = True, isAll = False, TmpDi
 
 if __name__ == "__main__":
 	Features = {}
-	Features['users'] = True #用于das3h中特征
-	Features['items'] = True #用于das3h中特征
+	Features['users'] = False #用于das3h中特征
+	Features['items'] = False #用于das3h中特征
 	Features['skills'] = True
 	Features['wins'] = True
-	Features['fails'] = False
-	Features['attempts'] = True
+	Features['fails'] = True
+	Features['attempts'] = False
 	
 	Features2 = {}
-	Features2['tw_kc'] = True
+	Features2['tw_kc'] = False
 	Features2['tw_items'] = False
 	all_features = ['users', 'items', 'skills', 'wins', 'fails', 'attempts']
 	active_features = [key for key, value in Features.items() if value]
@@ -320,7 +320,7 @@ if __name__ == "__main__":
 	# model parameters
 	#######################################
 	model_params = {
-		'dim': 0,
+		'dim': 20,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -342,7 +342,7 @@ if __name__ == "__main__":
 	TmpDir = "./data"
 	isKfold = False
 
-	#a = runKDD(datasetName = 'algebra05', isTest = True, isAll = True, TmpDir = TmpDir)
+	#a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = True, TmpDir = TmpDir)
 	a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
