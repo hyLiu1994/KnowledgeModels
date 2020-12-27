@@ -75,6 +75,16 @@ def transferStrT2Dir(timeLC):
 
 
 def getLegend(params, keyNumLimit = 1):
+
+    def transfer(item):
+        if item == True:
+            return 'T'
+        elif item == False:
+            return 'F'
+        elif item == 1e9:
+            return '1e9'
+        else:
+            return str(item)
     """Create save legend from params dictionary"""
     legend = ''
     for key,value in params.items():
@@ -82,20 +92,14 @@ def getLegend(params, keyNumLimit = 1):
             legend = legend + '_' + key[0:keyNumLimit].upper() + '_['
             flag = 0
             for item in value:
-                if item == 1e9:
-                    if flag == 0:
-                        legend = legend + '1e9'
-                    else:
-                        legend = legend + ',1e9'
+                if flag == 0:
+                    legend = legend + transfer(item)
                 else:
-                    if flag == 0:
-                        legend = legend + str(item)
-                    else:
-                        legend = legend + ',' + str(item)
+                    legend = legend + ',' + transfer(item)
                 flag += 1 
             legend = legend + ']'
         else:
-            legend=legend+'_'+key[0:keyNumLimit].upper()+'_'+str(value)
+            legend=legend+'_'+key[0:keyNumLimit].upper()+'_'+transfer(value)
 
     return legend
 

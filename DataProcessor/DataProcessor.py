@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from scipy import sparse
-from utils.this_queue import OurQueue
+from utils.this_queue import OurQueue, OurQueueDas3h
 from collections import defaultdict, Counter
 from sklearn.model_selection import KFold
 from sklearn.preprocessing import OneHotEncoder
@@ -15,9 +15,9 @@ from AssistDataProcessor import _AssistDataProcessor
 
 class _DataProcessor:
 	# minTimestamp必须传值，默认值不管用
-	def __init__(self, userLC, problemLC, timeLC, dataType = 'kdd', TmpDir = './data/'):
+	def __init__(self, userLC, problemLC, timeLC, dataType = 'kdd', TmpDir = './data/', datasetName = 'algrbta08'):
 		if dataType == 'kdd':
-			self.dataprocessor= _KDDCupDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
+			self.dataprocessor= _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = datasetName, TmpDir = TmpDir)
 		elif dataType == 'oj':
 			self.dataprocessor= _OJDataProcessor(userLC, problemLC, timeLC, TmpDir = TmpDir)
 		elif dataType == 'assist':
@@ -171,52 +171,126 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset, item_num
 
-	def loadDAS3HData(self, trainRate):
-		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
-		df = df.drop(['timestamp'],axis=1)                                                                        
+	def loadDAS3HData(self, active_features = ['skills'], features_suffix = '', trainRate = 0.8, tw = None, verbose = True):
 
+		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
+		df.reset_index(inplace=True, drop=True) # Add unique identifier of the row
+		df["inter_id"] = df.index
+		SaveDir = os.path.join(self.LCDataDir, 'das3h')
+		prepareFolder(SaveDir)
+
+		if os.path.exists(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))):
+			print ("存在现有的SparseFeatures, 直接读取")
+			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))))
+
+			users = df['user_id'].unique()
+			num = len(users)
+			train = users[:int(num*0.8)]
+			test = users[int(num*0.8):]
+			return sparse_df, train, test
+
+		# Transform q-matrix into dictionary
+		dict_q_mat = {i:set() for i in range(QMatrix.shape[0])}
+		for elt in np.argwhere(QMatrix == 1):
+			dict_q_mat[elt[0]].add(elt[1])
+
+		NB_OF_TIME_WINDOWS = 5
+
+		X={}
+		if 'skills' in active_features:
+			X["skills"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		if 'attempts' in active_features:
+			if tw == "tw_kc":
+				X["attempts"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1]*NB_OF_TIME_WINDOWS)))
+			elif tw == "tw_items":
+				X["attempts"] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+			else:
+				X["attempts"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		if 'wins' in active_features:
+			if tw == "tw_kc":
+				X["wins"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1]*NB_OF_TIME_WINDOWS)))
+			elif tw == "tw_items":
+				X["wins"] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
+			else:
+				X["wins"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+		if 'fails' in active_features:
+			X["fails"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
+
+		X['df'] = np.empty((0,5)) # Keep track of the original dataset
+
+		q = defaultdict(lambda: OurQueueDas3h())  # Prepare counters for time windows
+		for stud_id in df["user_id"].unique():
+			df_stud = df[df["user_id"]==stud_id][["user_id", "item_id", "timestamp", "correct","inter_id"]].copy()
+			df_stud.sort_values(by="timestamp", inplace=True) # Sort values 
+			df_stud = np.array(df_stud)
+			X['df'] = np.vstack((X['df'], df_stud))
+
+			if 'skills' in active_features:
+				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
+				X['skills'] = sparse.vstack([X["skills"],sparse.csr_matrix(skills_temp)])
+			if "attempts" in active_features:
+				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
+				if tw == "tw_kc":
+					attempts = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS*QMatrix.shape[1]))
+					for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
+						for skill_id in dict_q_mat[item_id]:
+							attempts[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + \
+								np.array(q[stud_id, skill_id].get_counters(t)))
+							q[stud_id, skill_id].push(t)
+				elif tw == "tw_items":
+					attempts = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
+					for l, (item_id, t) in enumerate(zip(df_stud[:,1], df_stud[:,2])):
+						attempts[l] = np.log(1 + np.array(q[stud_id, item_id].get_counters(t)))
+						q[stud_id, item_id].push(t)
+				else:
+					attempts = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),0)[:-1],skills_temp)
+				X['attempts'] = sparse.vstack([X['attempts'],sparse.csr_matrix(attempts)])
+			if "wins" in active_features:
+				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
+				if tw == "tw_kc":
+					wins = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS*QMatrix.shape[1]))
+					for l, (item_id, t, correct) in enumerate(zip(df_stud[:,1], df_stud[:,2], df_stud[:,3])):
+						for skill_id in dict_q_mat[item_id]:
+							wins[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + \
+								np.array(q[stud_id, skill_id, "correct"].get_counters(t)))
+							if correct:
+								q[stud_id, skill_id, "correct"].push(t)
+				elif tw == "tw_items":
+					wins = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
+					for l, (item_id, t, correct) in enumerate(zip(df_stud[:,1], df_stud[:,2], df_stud[:,3])):
+						wins[l] = np.log(1 + np.array(q[stud_id, item_id, "correct"].get_counters(t)))
+						if correct:
+							q[stud_id, item_id, "correct"].push(t)
+				else:
+					wins = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
+						np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+				X['wins'] = sparse.vstack([X['wins'],sparse.csr_matrix(wins)])
+			if "fails" in active_features:
+				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
+				fails = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
+					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+				X["fails"] = sparse.vstack([X["fails"],sparse.csr_matrix(fails)])
+			if verbose:
+				print(X["df"].shape)
+
+		onehot = OneHotEncoder()
+		if 'users' in active_features:
+			X['users'] = onehot.fit_transform(X["df"][:,0].reshape(-1,1))
+			if verbose:
+				print("Users encoded.")
+		if 'items' in active_features:
+			X['items'] = onehot.fit_transform(X["df"][:,1].reshape(-1,1))
+			if verbose:
+				print("Items encoded.")
+		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
+		
 		users = df['user_id'].unique()
 		num = len(users)
 		train = users[:int(num*0.8)]
 		test = users[int(num*0.8):]
+		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
+		return sparse_df, train, test
 
-		return train, test
-	def loadKTMData(self, dataset_params):
-		def to_dataset(data):
-		    data = tf.ragged.constant(data)
-		    data = tf.data.Dataset.from_tensor_slices(data)
-		    data = data.map(lambda x: x)
-		    return data
-		def get_data_size(dataset):
-		    if tf.__version__ == "2.2.0":
-		        data_size = tf.data.experimental.cardinality(dataset).numpy()
-		    else:
-		        data_size = dataset.cardinality().numpy()
-		    return data_size
-		def split_dataset(dataset, train_fraction):
-			data_size = get_data_size(dataset)
-			train_size = int(data_size * train_fraction)
-			train_size = train_size
-			test_size = data_size - train_size
-			train_dataset = dataset.take(train_size)
-			test_dataset = dataset.skip(train_size)
-			return train_dataset, test_dataset
-		active = dataset_params['active']
-		window_lengths = dataset_params['window_lengths'] 
-		batch_size = dataset_params['batch_size']
-		train_fraction = dataset_params['train_fraction']
-		raw_data, length = self.loadSparseDF(active_features=active, window_lengths=window_lengths)
-		raw_data = raw_data.toarray()
-		print(raw_data[10].astype(np.int32))
-		os._exit(0)
-		data = to_dataset(raw_data[:, 4:])
-		label = to_dataset(raw_data[:, 3])
-		dataset = tf.data.Dataset.zip((data, label))
-		dataset = dataset.map(lambda data, label: (tf.cast(data, dtype=tf.float32), tf.cast(label, dtype=tf.float32)))
-		train_dataset, test_dataset = split_dataset(dataset, train_fraction=0.8)
-		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
-		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
-		return train_dataset, test_dataset
 	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
 		"""Build sparse features dataset from dense dataset and q-matrix.
 
@@ -273,10 +347,6 @@ class _DataProcessor:
 			X["skills"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
 			Length["skills"] = QMatrix.shape[1]
 
-			if 'lasttime_0kcsingle' in active_features:
-				X['lasttime_0kcsingle'] = sparse.csr_matrix(np.empty((0, 1)))
-				Length["lasttime_0kcsingle"] = 1
-
 			X["lasttime_1kc"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
 			Length["lasttime_1kc"] = QMatrix.shape[1]
 
@@ -304,29 +374,11 @@ class _DataProcessor:
 			X['wins_2items'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
 			Length["wins_2items"] = NB_OF_TIME_WINDOWS
 
-			X['wins_3das3h'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
-			Length["wins_3das3h"] = QMatrix.shape[1]
-
-			X['wins_4das3hkc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
-			Length["wins_4das3hkc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
-
-			X['wins_5das3hitems'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
-			Length["wins_5das3hitems"] = NB_OF_TIME_WINDOWS
-
 			X['attempts_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
 			Length["attempts_1kc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
 				
 			X['attempts_2items'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
 			Length["attempts_2items"] = NB_OF_TIME_WINDOWS
-
-			X['attempts_3das3h'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
-			Length["attempts_3das3h"] = QMatrix.shape[1]
-
-			X['attempts_4das3hkc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
-			Length["attempts_4das3hkc"] = QMatrix.shape[1] * NB_OF_TIME_WINDOWS
-
-			X['attempts_5das3hitems'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
-			Length["attempts_5das3hitems"] = NB_OF_TIME_WINDOWS
 
 
 			X['fails_1kc'] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1] * NB_OF_TIME_WINDOWS)))
@@ -335,9 +387,6 @@ class _DataProcessor:
 			X['fails_2items'] = sparse.csr_matrix(np.empty((0, NB_OF_TIME_WINDOWS)))
 			Length["fails_2items"] = NB_OF_TIME_WINDOWS
 
-			X["fails_3das3h"] = sparse.csr_matrix(np.empty((0, QMatrix.shape[1])))
-			Length["fails_3das3h"] = QMatrix.shape[1]
-	 
 			q_kc = defaultdict(lambda: OurQueue(window_lengths))  # Prepare counters for time windows kc_related
 			q_item = defaultdict(lambda: OurQueue(window_lengths))  # item_related
 
@@ -355,10 +404,9 @@ class _DataProcessor:
 				skills = QMatrix[df_stud[:,1].astype(int)].copy()
 				X['skills'] = sparse.vstack([X['skills'],sparse.csr_matrix(skills)])
 
-				lasttime_0kcsingle = np.ones((df_stud.shape[0], 1)) * (-1e8)
-				lasttime_1kc = np.ones((df_stud.shape[0], QMatrix.shape[1])) * (-1e8)
-				lasttime_2items = np.ones((df_stud.shape[0], 1)) * (-1e8)
-				lasttime_3sequence = np.ones((df_stud.shape[0], 1)) * (-1e8)
+				lasttime_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
+				lasttime_2items = np.zeros((df_stud.shape[0], 1))
+				lasttime_3sequence = np.zeros((df_stud.shape[0], 1))
 
 				interval_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1]))
 				interval_2items = np.zeros((df_stud.shape[0], 1))
@@ -367,58 +415,43 @@ class _DataProcessor:
 				
 				wins_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
 				wins_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
-				wins_4das3hkc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
-				wins_5das3hitems = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 
 				fails_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
 				fails_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 
 				attempts_1kc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
 				attempts_2items = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
-				attempts_4das3hkc = np.zeros((df_stud.shape[0], QMatrix.shape[1] * NB_OF_TIME_WINDOWS))
-				attempts_5das3hitems = np.zeros((df_stud.shape[0], NB_OF_TIME_WINDOWS))
 					
 				for l, (item_id, t, correct) in enumerate(zip(df_stud[:,1], df_stud[:,2], df_stud[:,3])):
 					if l != 0:
 						lasttime_3sequence[l] = lasttime_3sequence[l-1]
 						interval_3sequence[l] = t - lasttime_3sequence[l]
 					for skill_id in range(QMatrix.shape[1]):
-						if 'lasttime_0kcsingle' in active_features:
-							lasttime_0kcsingle[l] = q_kc[stud_id, skill_id].get_last()
+					#for skill_id in dict_q_mat[item_id]:
 						lasttime_1kc[l, skill_id] = q_kc[stud_id, skill_id].get_last()
-						lasttime_2items[l] = q_item[stud_id, item_id].get_counters(t)
+						lasttime_2items[l] = q_item[stud_id, item_id].get_last()
 
 						interval_1kc[l, skill_id] = t - q_kc[stud_id, skill_id].get_last()
-						interval_2items[l] = t - q_item[stud_id, item_id].get_counters(t)
+						interval_2items[l] = t - q_item[stud_id, item_id].get_last()
 
 						wins_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id, "correct"].get_counters(t)
-						wins_2items[l] = q_item[stud_id, item_id, "correct"].get_counters(t)
-						wins_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id, "correct"].get_counters(t)))
-						wins_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id, "correct"].get_counters(t)))
+						wins_2items[l] = q_item[stud_id, item_id, "correct"].get_counters(t)						
 
 						attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = q_kc[stud_id, skill_id].get_counters(t)
 						attempts_2items[l] = q_item[stud_id, item_id].get_counters(t)
-						attempts_4das3hkc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = np.log(1 + np.array(q_kc[stud_id, skill_id].get_counters(t)))
-						attempts_5das3hitems[l] = np.log(1 + np.array(q_item[stud_id, item_id].get_counters(t)))
 
 						fails_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] = attempts_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS] - wins_1kc[l, skill_id*NB_OF_TIME_WINDOWS:(skill_id+1)*NB_OF_TIME_WINDOWS]
 						fails_2items[l] = attempts_2items[l] - wins_2items[l]
 
-					for skill_id in dict_q_mat[item_id]:
-						q_kc[stud_id, skill_id].push(t)
-						q_item[stud_id, item_id].push(t)
-						if correct:
-							q_kc[stud_id, item_id, "correct"].push(t)
-							q_item[stud_id, item_id, "correct"].push(t)
+						if skill_id in dict_q_mat[item_id]:
+							q_kc[stud_id, skill_id].push(t)
+							if correct:
+								q_kc[stud_id, skill_id, "correct"].push(t)
+					q_item[stud_id, item_id].push(t)
+					if correct:
+						q_item[stud_id, item_id, "correct"].push(t)
 
-				attempts_3das3h = np.multiply(np.cumsum(np.vstack((np.zeros(skills.shape[1]),skills)),0)[:-1],skills)
-				wins_3das3h = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills.shape[1]),skills)),
-					np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills)
-				fails_3das3h = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills.shape[1]),skills)),
-					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills)
-			
-				if 'lasttime_0kcsingle' in active_features:
-					X['lasttime_0kcsingle'] = sparse.vstack([X['lasttime_0kcsingle'],sparse.csr_matrix(lasttime_0kcsingle)])
+
 				X['lasttime_1kc'] = sparse.vstack([X['lasttime_1kc'],sparse.csr_matrix(lasttime_1kc)])
 				X['lasttime_2items'] = sparse.vstack([X['lasttime_2items'],sparse.csr_matrix(lasttime_2items)])
 				X['lasttime_3sequence'] = sparse.vstack([X['lasttime_3sequence'],sparse.csr_matrix(lasttime_3sequence)])
@@ -429,18 +462,13 @@ class _DataProcessor:
 
 				X['wins_1kc'] = sparse.vstack([X['wins_1kc'],sparse.csr_matrix(wins_1kc)])
 				X['wins_2items'] = sparse.vstack([X['wins_2items'],sparse.csr_matrix(wins_2items)])
-				X['wins_3das3h'] = sparse.vstack([X['wins_3das3h'],sparse.csr_matrix(wins_3das3h)])
-				X['wins_4das3hkc'] = sparse.vstack([X['wins_4das3hkc'],sparse.csr_matrix(wins_4das3hkc)])
-				X['wins_5das3hitems'] = sparse.vstack([X['wins_5das3hitems'],sparse.csr_matrix(wins_5das3hitems)])
+
 				X['attempts_1kc'] = sparse.vstack([X['attempts_1kc'],sparse.csr_matrix(attempts_1kc)])
 				X['attempts_2items'] = sparse.vstack([X['attempts_2items'],sparse.csr_matrix(attempts_2items)])
-				X['attempts_3das3h'] = sparse.vstack([X['attempts_3das3h'],sparse.csr_matrix(attempts_3das3h)])
-				X['attempts_4das3hkc'] = sparse.vstack([X['attempts_4das3hkc'],sparse.csr_matrix(attempts_4das3hkc)])
-				X['attempts_5das3hitems'] = sparse.vstack([X['attempts_5das3hitems'],sparse.csr_matrix(attempts_5das3hitems)])
+
 
 				X['fails_1kc'] = sparse.vstack([X['fails_1kc'],sparse.csr_matrix(fails_1kc)])
 				X['fails_2items'] = sparse.vstack([X['fails_2items'],sparse.csr_matrix(fails_2items)])
-				X["fails_3das3h"] = sparse.vstack([X["fails_3das3h"],sparse.csr_matrix(fails_3das3h)])
 				i+=1
 				if i%100 == 0:
 					print(i,userNum)
@@ -457,8 +485,6 @@ class _DataProcessor:
 
 			print(all_features)
 			for agent in all_features:
-				if (agent == 'lasttime_0kcsingle') and (agent not in active_features):
-					continue
 				f = getFeaturesSuffix([agent])
 				if not os.path.exists(os.path.join(SaveDir, 'X-{:s}.npz'.format(f))):
 					single = sparse.hstack([sparse.csr_matrix(X['df']),sparse.csr_matrix(X[agent])]).tocsr()
@@ -483,8 +509,6 @@ class _DataProcessor:
 			length = {}
 			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X.npz')))
 			for agent in active_features:
-				if (agent == 'lasttime_0kcsingle') and (agent not in active_features):
-					continue
 				f = getFeaturesSuffix([agent])
 				single = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(f))))
 				sparse_df = sparse.hstack([sparse_df,single[:,4:]]).tocsr()
@@ -494,6 +518,42 @@ class _DataProcessor:
 
 		return sparse_df, length
 
+	def loadKTMData(self, dataset_params):
+		def to_dataset(data):
+		    data = tf.ragged.constant(data)
+		    data = tf.data.Dataset.from_tensor_slices(data)
+		    data = data.map(lambda x: x)
+		    return data
+		def get_data_size(dataset):
+		    if tf.__version__ == "2.2.0":
+		        data_size = tf.data.experimental.cardinality(dataset).numpy()
+		    else:
+		        data_size = dataset.cardinality().numpy()
+		    return data_size
+		def split_dataset(dataset, train_fraction):
+			data_size = get_data_size(dataset)
+			train_size = int(data_size * train_fraction)
+			train_size = train_size
+			test_size = data_size - train_size
+			train_dataset = dataset.take(train_size)
+			test_dataset = dataset.skip(train_size)
+			return train_dataset, test_dataset
+		active = dataset_params['active']
+		window_lengths = dataset_params['window_lengths'] 
+		batch_size = dataset_params['batch_size']
+		train_fraction = dataset_params['train_fraction']
+		raw_data, length = self.loadSparseDF(active_features=active, window_lengths=window_lengths)
+		raw_data = raw_data.toarray()
+		print(raw_data[10].astype(np.int32))
+		os._exit(0)
+		data = to_dataset(raw_data[:, 4:])
+		label = to_dataset(raw_data[:, 3])
+		dataset = tf.data.Dataset.zip((data, label))
+		dataset = dataset.map(lambda data, label: (tf.cast(data, dtype=tf.float32), tf.cast(label, dtype=tf.float32)))
+		train_dataset, test_dataset = split_dataset(dataset, train_fraction=0.8)
+		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
+		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
+		return train_dataset, test_dataset
 
 	def getExtraStatics(self):
 
@@ -556,35 +616,95 @@ if __name__ == "__main__":
 	#algebra08原始数据里的最值
 	#low_time = "2008-09-08 14:46:48"
 	#high_time = "2009-07-06 18:02:12"
-	
-	
 	isTest = True
 	isAll = False
 
-	if isTest == True:
-		userLC = [10, 3000]
-		problemLC = [10, 5000]
-		low_time = "2008-12-21 14:46:48"
-		high_time = "2009-01-01 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [30, 3000]
-		problemLC = [30, 1e9]
-		low_time = "2008-09-08 14:46:48"
-		high_time = "2009-07-06 18:02:12"
-		timeLC = [low_time, high_time]
-	if isAll == True:
-		userLC = [10, 1e9]
-		problemLC = [10, 1e9]
-		low_time = "2008-09-08 14:46:48"
-		high_time = "2009-07-06 18:02:12"
-		timeLC = [low_time, high_time]
-	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = '../data')
+	datasetName = 'algebra05'
+
+	if datasetName == 'algebra08':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2008-12-21 14:46:48"
+			high_time = "2009-01-01 00:00:00"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [30, 3600]
+			problemLC = [30, 1e9]
+			low_time = "2008-09-08 14:46:48"
+			high_time = "2009-01-01 00:00:00"
+			timeLC = [low_time, high_time]
+		if isAll == True:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2008-09-08 14:46:48"
+			high_time = "2009-07-06 18:02:12"
+			timeLC = [low_time, high_time]
+
+
+	elif datasetName == 'algebra05':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2006-06-01 00:00:00"
+			high_time = "2006-06-07 11:12:38"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2005-08-30 09:50:35"
+			high_time = "2006-06-07 11:12:38"
+			timeLC = [low_time, high_time]
+
+	elif datasetName == 'bridge_algebra06':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2006-06-10 08:26:16"
+			high_time = "2007-06-20 13:36:57"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2006-10-05 08:26:16"
+			high_time = "2007-06-20 13:36:57"
+			timeLC = [low_time, high_time]
+
+	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = '../data')
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	print('**************StaticInformation**************')
 	printDict(StaticInformation)
-	a.loadDAS3HData(0.8)
+
+	'''
+	Features = {}
+	Features['users'] = True #用于das3h中特征
+	Features['items'] = True #用于das3h中特征
+	Features['skills'] = True
+	Features['wins'] = True
+	Features['fails'] = False
+	Features['attempts'] = True
+	
+	Features2 = {}
+	Features2['tw_kc'] = True
+	Features2['tw_items'] = False
+	all_features = ['users', 'items', 'skills', 'wins', 'fails', 'attempts']
+	active_features = [key for key, value in Features.items() if value]
+	all_features = ['users', 'items', 'skills', 'wins', 'fails', 'attempts']
+	active_features = [key for key, value in Features.items() if value]
+
+	features_suffix = ''.join([features[0] for features in active_features])
+	if Features["tw_kc"]:
+		features_suffix += 't1'
+		tw = "tw_kc"
+	elif Features["tw_items"]:
+		features_suffix += 't2'
+		tw = "tw_items"
+	else:
+		tw = None
+
+	sparsedf, train, test = a.loadDAS3HData(active_features, features_suffix, 0.8, tw=tw)
 	printDict(a.getExtraStatics())
+	'''
 	
 
 	#hdu原始数据里的最值
@@ -594,7 +714,7 @@ if __name__ == "__main__":
 	'''
 	isTest = True
 	if isTest == True:
-        userLC = [10, 500, 0.1, 1]
+        userLC = [10, 500, 0.1, 1]  
         problemLC = [10, 500, 0, 1]
         low_time = "2018-11-22 00:00:00"
         high_time = "2018-11-29 00:00:00"
@@ -643,34 +763,25 @@ if __name__ == "__main__":
 	test loadSparseDF
 	'''      
 
-	'''
 	Features = {}
-	Features['users'] = True #用于das3h中特征
-	Features['items'] = True #用于das3h中特征
+	Features['users'] = False #用于das3h中特征
+	Features['items'] = False #用于das3h中特征
 	Features['skills'] = False
-	Features['lasttime_0kcsingle'] = False
-	Features['lasttime_1kc'] = False
+	Features['lasttime_1kc'] = True
 	Features['lasttime_2items'] = False
 	Features['lasttime_3sequence'] = False
 	Features['interval_1kc'] = False
 	Features['interval_2items'] = False
 	Features['interval_3sequence'] = False
-	Features['wins_1kc'] = False
+	Features['wins_1kc'] = True
 	Features['wins_2items'] = False
-	Features['wins_3das3h'] = False #用于das3h中特征
-	Features['wins_4das3hkc'] = False #用于das3h中特征
-	Features['wins_5das3hitems'] = False #用于das3h中特征
 	Features['fails_1kc'] = False
 	Features['fails_2items'] = False
-	Features['fails_3das3h'] = False
-	Features['attempts_1kc'] = False 
+	Features['attempts_1kc'] = True 
 	Features['attempts_2items'] = False
-	Features['attempts_3das3h'] = False #用于das3h中特征
-	Features['attempts_4das3hkc'] = False #用于das3h中特征
-	Features['attempts_5das3hitems'] = False #用于das3h中特征
 
-	window_lengths = [3600*24*30*365]
-	#window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600]
+
+	window_lengths = [3600 * 24 * 30 * 12 * 100]
 
 	active_features = [key for key, value in Features.items() if value]
 	all_features = list(Features.keys())
@@ -678,4 +789,4 @@ if __name__ == "__main__":
 	print('**************sparse_df**************')
 	print(sparse_df.shape)
 	printDict(Length)
-	'''
+	

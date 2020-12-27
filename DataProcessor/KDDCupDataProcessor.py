@@ -59,6 +59,10 @@ class _KDDCupDataProcessor:
 
 		if self.datasetName == 'algebra08':
 			kc_col_name = 'KC(KTracedSkills)'
+		elif self.datasetName == 'algebra05':
+			kc_col_name = 'KC(Default)'
+		elif self.datasetName == 'bridge_algebra06':
+			kc_col_name = 'KC(SubSkills)'
 
 		df = pd.read_csv(os.path.join(self.RawDataDir, self.RawDataName), delimiter='\t', low_memory=False).rename(columns={
 			'Anon Student Id': 'user_id',
@@ -81,6 +85,9 @@ class _KDDCupDataProcessor:
 
 		# 1 timeLC
 		df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+		print(df['timestamp'].min(),df['timestamp'].max())
+
 		df['timestamp'] = df['timestamp'] - self.minTimestamp
 		#df['timestamp'] = df['timestamp'].apply(lambda x: x.total_seconds() / (3600*24))
 		df['timestamp'] = df['timestamp'].apply(lambda x: x.total_seconds()).astype(np.int64)
@@ -179,28 +186,60 @@ if __name__ == "__main__":
 	#algebra08原始数据里的最值
 	#low_time = "2008-09-08 14:46:48"
 	#high_time = "2009-07-06 18:02:12"
-	isTest = Tue
+	isTest = False
 	isAll = False
 
-	if isTest == True:
-		userLC = [10, 3000]
-		problemLC = [10, 5000]
-		low_time = "2008-12-21 14:46:48"
-		high_time = "2009-01-01 00:00:00"
-		timeLC = [low_time, high_time]
-	else:
-		userLC = [30, 3000]
-		problemLC = [30, 1e9]
-		low_time = "2008-09-08 14:46:48"
-		high_time = "2009-07-06 18:02:12"
-		timeLC = [low_time, high_time]
-	if isAll == True:
-		userLC = [10, 1e9]
-		problemLC = [10, 1e9]
-		low_time = "2008-09-08 14:46:48"
-		high_time = "2009-07-06 18:02:12"
-		timeLC = [low_time, high_time]
-	a = _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = 'algebra08', TmpDir = '../data')
+	datasetName = 'bridge_algebra06'
+
+	if datasetName == 'algebra08':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2008-12-21 14:46:48"
+			high_time = "2009-01-01 00:00:00"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [30, 3600]
+			problemLC = [30, 1e9]
+			low_time = "2008-09-08 14:46:48"
+			high_time = "2009-01-01 00:00:00"
+			timeLC = [low_time, high_time]
+		if isAll == True:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2008-09-08 14:46:48"
+			high_time = "2009-07-06 18:02:12"
+			timeLC = [low_time, high_time]
+		a = _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = 'algebra08', TmpDir = '../data')
+
+	elif datasetName == 'algebra05':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2006-06-01 00:00:00"
+			high_time = "2006-06-07 11:12:38"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2005-08-30 09:50:35"
+			high_time = "2006-06-07 11:12:38"
+			timeLC = [low_time, high_time]
+		a = _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = 'algebra05', TmpDir = '../data')
+	elif datasetName == 'bridge_algebra06':
+		if isTest == True:
+			userLC = [10, 3000]
+			problemLC = [10, 5000]
+			low_time = "2006-06-10 08:26:16"
+			high_time = "2007-06-20 13:36:57"
+			timeLC = [low_time, high_time]
+		else:
+			userLC = [10, 1e9]
+			problemLC = [10, 1e9]
+			low_time = "2006-10-05 08:26:16"
+			high_time = "2007-06-20 13:36:57"
+			timeLC = [low_time, high_time]
+		a = _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = 'bridge_algebra06', TmpDir = '../data')
 	print('**************LC_params**************')
 	printDict(a.LC_params)
 	[df, QMatrix, StaticInformation, DictList] = a.loadLCData()
