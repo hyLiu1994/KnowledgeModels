@@ -7,6 +7,7 @@ from scipy import sparse
 from utils.this_queue import OurQueue, OurQueueDas3h
 from collections import defaultdict, Counter
 from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
@@ -183,11 +184,16 @@ class _DataProcessor:
 			print ("存在现有的SparseFeatures, 直接读取")
 			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))))
 
-			users = df['user_id'].unique()
-			num = len(users)
-			train = users[:int(num*0.8)]
-			test = users[int(num*0.8):]
-			return sparse_df, train, test
+			all_users = df['user_id'].unique()
+			users_train, users_test = train_test_split(all_users, train_size = trainRate, shuffle = False)
+
+			dict_data = {'0':{}}
+			dict_data['0']={'train':users_train,'test':users_test}
+
+			saveDict(dict_data,self.LCDataDir, 'splitedInformation_trainRate('+str(int(trainRate*100))+').json')
+			printDict(dict_data)
+			print(dict_data)
+			return sparse_df, dict_data
 
 		# Transform q-matrix into dictionary
 		dict_q_mat = {i:set() for i in range(QMatrix.shape[0])}
@@ -287,13 +293,17 @@ class _DataProcessor:
 			if verbose:
 				print("Items encoded.")
 		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
-		
-		users = df['user_id'].unique()
-		num = len(users)
-		train = users[:int(num*0.8)]
-		test = users[int(num*0.8):]
+
+		all_users = df['user_id'].unique()
+		users_train, users_test = train_test_split(all_users, train_size = trainRate, shuffle = False)
+
+		dict_data = {'0':{}}
+		dict_data['0']={'train':users_train,'test':users_test}
+
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
-		return sparse_df, train, test
+		saveDict(dict_data,self.LCDataDir, 'splitedInformation_trainRate('+str(int(trainRate*100))+').json')
+		return sparse_df, dict_data
+
 
 	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
 		"""Build sparse features dataset from dense dataset and q-matrix.

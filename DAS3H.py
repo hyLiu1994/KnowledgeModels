@@ -43,6 +43,8 @@ def DAS3H(a, active, tw, isKfold, model_params):
 		prefix = 'AFM'
 	elif set(active) == {'skills', 'wins', 'fails'}:
 		prefix = 'PFA'
+	elif set(active) == {'items', 'skills', 'wins', 'fails'}:
+		prefix = 'KTM'
 	elif set(active) == {'users', 'items', 'skills', 'wins', 'attempts'} and ( tw == 'tw_kc'):
 		prefix = 'DAS3H'
 	elif set(active) == {'users', 'items', 'wins', 'attempts'} and ( tw == 'tw_items'):
@@ -58,7 +60,7 @@ def DAS3H(a, active, tw, isKfold, model_params):
 
 
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
-	X, users_train, users_test = a.loadDAS3HData(active, features_suffix, 0.8, tw=tw)
+	X, dict_data = a.loadDAS3HData(active, features_suffix, 0.8, tw=tw)
 	y = X[:,3].toarray().flatten()
 
 	saveDir = os.path.join(a.LCDataDir, 'das3h', 'results_K'+str(isKfold)[0], prefix)
@@ -136,9 +138,9 @@ def DAS3H(a, active, tw, isKfold, model_params):
 				m.update_state(y_test, y_pred_test)
 				temp[metric] = m.result().numpy()
 	else:
-		X_train = X[np.where(np.isin(X[:,0].toarray().flatten(),users_train))]
+		X_train = X[np.where(np.isin(X[:,0].toarray().flatten(),dict_data['0']['train']))]
 		y_train = X_train[:,3].toarray().flatten()
-		X_test = X[np.where(np.isin(X[:,0].toarray().flatten(),users_test))]
+		X_test = X[np.where(np.isin(X[:,0].toarray().flatten(),dict_data['0']['test']))]
 		y_test = X_test[:,3].toarray().flatten()
 
 		if model_params['dim'] == 0:
@@ -293,15 +295,15 @@ def runAssist(datasetName = 'assistments12', isTest = True, isAll = False, TmpDi
 
 if __name__ == "__main__":
 	Features = {}
-	Features['users'] = False #用于das3h中特征
-	Features['items'] = False #用于das3h中特征
+	Features['users'] = True #用于das3h中特征
+	Features['items'] = True #用于das3h中特征
 	Features['skills'] = True
 	Features['wins'] = True
-	Features['fails'] = True
-	Features['attempts'] = False
+	Features['fails'] = False
+	Features['attempts'] = True
 	
 	Features2 = {}
-	Features2['tw_kc'] = False
+	Features2['tw_kc'] = True
 	Features2['tw_items'] = False
 	all_features = ['users', 'items', 'skills', 'wins', 'fails', 'attempts']
 	active_features = [key for key, value in Features.items() if value]
@@ -340,10 +342,10 @@ if __name__ == "__main__":
 
 	# TmpDir = "./DataProcessor/data"
 	TmpDir = "./data"
-	isKfold = False
+	isKfold = True
 
-	#a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = True, TmpDir = TmpDir)
-	a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
+	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = True, TmpDir = TmpDir)
+	#a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
