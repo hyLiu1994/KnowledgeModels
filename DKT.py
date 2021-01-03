@@ -177,10 +177,10 @@ def runKDD(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,3000]
-    problemLC = [10,5000]
+    userLC = [30, 3600]
+    problemLC = [30, 1e9]
     # algebra08原始数据里的最值，可以注释，不要删
-    low_time = "2008-12-21 14:46:48"
+    low_time = "2008-09-08 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
@@ -239,10 +239,10 @@ def runOJ(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,500,0.1,1]
-    problemLC = [10,500,0,1]
+    userLC = [30, 3600, 0.1, 1]
+    problemLC = [30, 1e9, 0, 1]
     #hdu原始数据里的最值，可以注释，不要删
-    low_time = "2018-11-22 00:00:00" 
+    low_time = "2018-06-01 00:00:00" 
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
@@ -301,8 +301,8 @@ def runAssist(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,3000]
-    problemLC = [10,3000]
+    userLC = [10, 3000]
+    problemLC = [10, 3000]
     #hdu原始数据里的最值，可以注释，不要删
     low_time = "2012-09-01 00:00:00" 
     high_time = "2012-09-30 00:00:00"
@@ -366,8 +366,8 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
-    runOJ(False)
-    runKDD(False)
+    # runOJ(False)
+    # runKDD(False)
     runAssist(False)
 
 
