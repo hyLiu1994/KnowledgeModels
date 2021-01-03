@@ -7,6 +7,7 @@ from scipy import sparse
 from utils.this_queue import OurQueue, OurQueueDas3h
 from collections import defaultdict, Counter
 from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder
 from public import *
 from KDDCupDataProcessor import _KDDCupDataProcessor
@@ -183,11 +184,16 @@ class _DataProcessor:
 			print ("存在现有的SparseFeatures, 直接读取")
 			sparse_df = sparse.csr_matrix(sparse.load_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix))))
 
-			users = df['user_id'].unique()
-			num = len(users)
-			train = users[:int(num*0.8)]
-			test = users[int(num*0.8):]
-			return sparse_df, train, test
+			all_users = df['user_id'].unique()
+			users_train, users_test = train_test_split(all_users, train_size = trainRate, shuffle = False)
+
+			dict_data = {'0':{}}
+			dict_data['0']={'train':users_train,'test':users_test}
+
+			saveDict(dict_data,self.LCDataDir, 'splitedInformation_trainRate('+str(int(trainRate*100))+').json')
+			printDict(dict_data)
+			print(dict_data)
+			return sparse_df, dict_data
 
 		# Transform q-matrix into dictionary
 		dict_q_mat = {i:set() for i in range(QMatrix.shape[0])}
@@ -243,7 +249,7 @@ class _DataProcessor:
 						attempts[l] = np.log(1 + np.array(q[stud_id, item_id].get_counters(t)))
 						q[stud_id, item_id].push(t)
 				else:
-					attempts = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),0)[:-1],skills_temp)
+					attempts = np.multiply(np.cumsum(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),0)[:-1],skills_temp.toarray())
 				X['attempts'] = sparse.vstack([X['attempts'],sparse.csr_matrix(attempts)])
 			if "wins" in active_features:
 				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
@@ -262,13 +268,17 @@ class _DataProcessor:
 						if correct:
 							q[stud_id, item_id, "correct"].push(t)
 				else:
-					wins = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
-						np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+					'''
+					print(np.zeros(skills_temp.shape[1]))
+					print(skills_temp)
+					print(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())))
+					'''
+					wins = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),np.hstack((np.array([0]),df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp.toarray())
+
 				X['wins'] = sparse.vstack([X['wins'],sparse.csr_matrix(wins)])
 			if "fails" in active_features:
 				skills_temp = QMatrix[df_stud[:,1].astype(int)].copy()
-				fails = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp)),
-					np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp)
+				fails = np.multiply(np.cumsum(np.multiply(np.vstack((np.zeros(skills_temp.shape[1]),skills_temp.toarray())),np.hstack((np.array([0]),1-df_stud[:,3])).reshape(-1,1)),0)[:-1],skills_temp.toarray())
 				X["fails"] = sparse.vstack([X["fails"],sparse.csr_matrix(fails)])
 			if verbose:
 				print(X["df"].shape)
@@ -283,13 +293,17 @@ class _DataProcessor:
 			if verbose:
 				print("Items encoded.")
 		sparse_df = sparse.hstack([sparse.csr_matrix(X['df']),sparse.hstack([X[agent] for agent in active_features])]).tocsr()
-		
-		users = df['user_id'].unique()
-		num = len(users)
-		train = users[:int(num*0.8)]
-		test = users[int(num*0.8):]
+
+		all_users = df['user_id'].unique()
+		users_train, users_test = train_test_split(all_users, train_size = trainRate, shuffle = False)
+
+		dict_data = {'0':{}}
+		dict_data['0']={'train':users_train,'test':users_test}
+
 		sparse.save_npz(os.path.join(SaveDir, 'X-{:s}.npz'.format(features_suffix)), sparse_df)
-		return sparse_df, train, test
+		saveDict(dict_data,self.LCDataDir, 'splitedInformation_trainRate('+str(int(trainRate*100))+').json')
+		return sparse_df, dict_data
+
 
 	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
 		"""Build sparse features dataset from dense dataset and q-matrix.
