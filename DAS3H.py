@@ -344,11 +344,11 @@ if __name__ == "__main__":
 
 	# TmpDir = "./DataProcessor/data"
 	TmpDir = "./data"
-	isKfold = False
+	isKfold = True
 
 	# bridge_algebra06 algebra05
 	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
-	#a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
+	#a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 	
 	active_features = ['skills', 'attempts']
