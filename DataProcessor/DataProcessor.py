@@ -16,7 +16,7 @@ from AssistDataProcessor import _AssistDataProcessor
 
 class _DataProcessor:
 	# minTimestamp必须传值，默认值不管用
-	def __init__(self, userLC, problemLC, timeLC, dataType = 'kdd', TmpDir = './data/', datasetName = 'algrbta08'):
+	def __init__(self, userLC, problemLC, timeLC, dataType = 'kdd', TmpDir = './data/', datasetName = 'algebra08'):
 		if dataType == 'kdd':
 			self.dataprocessor= _KDDCupDataProcessor(userLC, problemLC, timeLC, datasetName = datasetName, TmpDir = TmpDir)
 		elif dataType == 'oj':
@@ -551,7 +551,7 @@ class _DataProcessor:
 
 		return sparse_df, length
 
-	def loadKTMData(self, dataset_params):
+	def loadKTMData(self, dataset_params, all_features):
 		def to_dataset(data):
 		    data = tf.ragged.constant(data)
 		    data = tf.data.Dataset.from_tensor_slices(data)
@@ -575,15 +575,14 @@ class _DataProcessor:
 		window_lengths = dataset_params['window_lengths'] 
 		batch_size = dataset_params['batch_size']
 		train_fraction = dataset_params['train_fraction']
-		raw_data, length = self.loadSparseDF(active_features=active, window_lengths=window_lengths)
+		
+		raw_data, length = self.loadSparseDF(active_features=active, window_lengths=window_lengths, all_features=all_features)
 		raw_data = raw_data.toarray()
-		print(raw_data[10].astype(np.int32))
-		os._exit(0)
 		data = to_dataset(raw_data[:, 4:])
 		label = to_dataset(raw_data[:, 3])
 		dataset = tf.data.Dataset.zip((data, label))
 		dataset = dataset.map(lambda data, label: (tf.cast(data, dtype=tf.float32), tf.cast(label, dtype=tf.float32)))
-		train_dataset, test_dataset = split_dataset(dataset, train_fraction=0.8)
+		train_dataset, test_dataset = split_dataset(dataset, train_fraction=train_fraction)
 		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset
@@ -703,7 +702,8 @@ if __name__ == "__main__":
 			high_time = "2007-06-20 13:36:57"
 			timeLC = [low_time, high_time]
 
-	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = 'data')
+	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = './data')
+
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
 	print(df.columns)
 	print('**************StaticInformation**************')

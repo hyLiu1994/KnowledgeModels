@@ -117,6 +117,8 @@ class DKVMN(tf.keras.Model):
         w_t = tf.keras.activations.softmax(tf.matmul(k_t, self.mk, transpose_b=True))
         # p_t: [batch_size, 1]
         p_t = self.get_p_t(k_t, w_t, mv_tm1)
+        print(p_t.shape)
+        os._exit(0)
         # mv_t: [batch_size, m_N, mv_dim]
         mv_t = self.get_mv_t(w_t, skill_with_correct, mv_tm1)
         return p_t, mv_t
@@ -223,10 +225,10 @@ def runKDD(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,3000]
-    problemLC = [10,5000]
+    userLC = [30,3600]
+    problemLC = [30,1e9]
     # algebra08原始数据里的最值，可以注释，不要删
-    low_time = "2008-12-21 14:46:48"
+    low_time = "2008-09-08 14:46:48"
     high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
@@ -281,10 +283,10 @@ def runOJ(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,500,0.1,1]
-    problemLC = [10,500,0,1]
+    userLC = [30,3600,0.1,1]
+    problemLC = [30,1e9,0,1]
     #hdu原始数据里的最值，可以注释，不要删
-    low_time = "2018-11-22 00:00:00" 
+    low_time = "2018-06-01 00:00:00" 
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
@@ -339,8 +341,8 @@ def runAssist(is_test=True):
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,3000]
-    problemLC = [10,3000]
+    userLC = [10, 3000]
+    problemLC = [10, 3000]
     #hdu原始数据里的最值，可以注释，不要删
     low_time = "2012-09-01 00:00:00" 
     high_time = "2012-09-30 00:00:00"
@@ -398,10 +400,10 @@ def set_run_eagerly(is_eager=False):
     else:
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
-    set_run_eagerly(False)
+    set_run_eagerly(True)
     
-    runAssist(False)
-    runOJ(False)
+    #runAssist(False)
+    #runOJ(False)
     runKDD(False)
 
 

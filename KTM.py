@@ -1,20 +1,15 @@
 import os
 import sys
 import json
-import pywFM
-import argparse
 import numpy as np
 import pandas as pd
 import tensorflow as tf 
-from sklearn import metrics
 from tensorflow.keras import layers
 from sklearn.linear_model import LogisticRegression
 from scipy.sparse import load_npz, hstack, csr_matrix
 sys.path.append("./DataProcessor/")
 from public import *
 from DataProcessor import _DataProcessor
-# Location of libFM's compiled binary file
-os.environ['LIBFM_PATH'] = '~/libfm/bin/'
 # import tensorflow_probability as tfp
 
 
@@ -144,24 +139,20 @@ def runKDD():
     Features['users'] = True
     Features['items'] = True
     Features['skills'] = True
-    Features['lasttime_0kcsingle'] = False
-    Features['lasttime_1kc'] = False
+    Features['lasttime_1kc'] = False 
     Features['lasttime_2items'] = False
     Features['lasttime_3sequence'] = False
-    Features['wins_1kc'] = False
+    Features['interval_1kc'] = False
+    Features['interval_2items'] = False
+    Features['interval_3sequence'] = False
     Features['wins_1kc'] = True
     Features['wins_2items'] = False
-    Features['wins_3das3h'] = False #用于das3h中特征
-    Features['wins_4das3hkc'] = False #用于das3h中特征
-    Features['wins_5das3hitems'] = False #用于das3h中特征   
-    Features['fails_1kc'] = False
-    Features['fails_1kc'] = True
+    Features['fails_1kc'] = True 
+    Features['fails_2items'] = False
     Features['attempts_1kc'] = False
     Features['attempts_2items'] = False
-    Features['attempts_3das3h'] = False #用于das3h中特征
-    Features['attempts_4das3hkc'] = False #用于das3h中特征
-    Features['attempts_5das3hitems'] = False #用于das3h中特征
     active = [key for key, value in Features.items() if value]
+    all_features = list(Features.keys())
     features_suffix = getFeaturesSuffix(active)
     window_lengths = [365 * 24 * 3600]
     ####################################### 
@@ -170,12 +161,13 @@ def runKDD():
     userLC = [10,3000]
     problemLC = [10,5000]
     # algebra08原始数据里的最值，可以注释，不要删
-    low_time = "2008-12-21 14:46:48 "
+    low_time = "2008-09-08 14:46:48 "
     high_time = "2009-01-01 00:00:00"
 
     timeLC = [low_time, high_time]
 
     a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
+    # a = _DataProcessor(userLC, problemLC, timeLC, 'kdd')
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'KTM')
     print("===================================")
@@ -186,7 +178,10 @@ def runKDD():
     train_fraction=0.8
     dataset_params ={'active': active, 'window_lengths': window_lengths, 
                         'batch_size': batch_size, 'train_fraction': train_fraction}
-    train_dataset, test_dataset = a.loadKTMData(dataset_params)
+    train_dataset, test_dataset = a.loadKTMData(dataset_params, all_features=all_features)
+    os._exit(0)
+    for i in train_dataset.take(1):
+        print(i.shape)
 
     feature_num = [d for d, l in train_dataset.take(1)][0].shape[-1]
     print('feature_num: ', feature_num)
@@ -197,27 +192,111 @@ def runKDD():
     model_params["metrics_path"] = saveDir + "/metrics.csv"
     model = KTM(model_params)
     train(epoch=30, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+
+
+def runOJ(is_test=True):
+    Features = {}
+    Features['users'] = True
+    Features['items'] = True
+    Features['skills'] = True
+    Features['lasttime_1kc'] = False 
+    Features['lasttime_2items'] = False
+    Features['lasttime_3sequence'] = False
+    Features['interval_1kc'] = False
+    Features['interval_2items'] = False
+    Features['interval_3sequence'] = False
+    Features['wins_1kc'] = True
+    Features['wins_2items'] = False
+    Features['fails_1kc'] = True 
+    Features['fails_2items'] = False
+    Features['attempts_1kc'] = False
+    Features['attempts_2items'] = False
+    active = [key for key, value in Features.items() if value]
+    all_features = list(Features.keys())
+    features_suffix = getFeaturesSuffix(active)
+    window_lengths = [365 * 24 * 3600]
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [30, 3600, 0.1, 1]
+    problemLC = [30, 1e9, 0, 1]
+    #hdu原始数据里的最值，可以注释，不要删
+    low_time = "2018-06-01 00:00:00" 
+    high_time = "2018-11-29 00:00:00"
+    timeLC = [low_time, high_time]
+    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
+
+    LCDataDir = data_processor.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'KTM')
+    print("===================================")
+    print("metrics save path: ", saveDir)
+    print("===================================")
+    prepareFolder(saveDir)
+    LC_params = data_processor.LC_params
+
+    dataset_params = copy.deepcopy(LC_params)
+    train_fraction = 0.8
+    batch_size = 32
+
+    dataset_params ={'active': active, 'window_lengths': window_lengths, 
+                        'batch_size': batch_size, 'train_fraction': train_fraction}
+    train_dataset, test_dataset = a.loadKTMData(dataset_params, all_features=all_features)
+    os._exit(0)
+    #######################################
+    # model parameters
+    #######################################
+    model_params = {}
+    model_params['trainRate'] = 0.8
+
+    model_params['lstm_units'] = 40
+    model_params['dropout'] = 0.01
+    model_params['l2'] = 0.01
+    model_params['problem_embed_dim'] = 20
+    model_params['problem_num'] = problem_num
+    model_params['epoch'] = 200
+    model_params['threshold'] = 0.5
+    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params["data_shape"] = [data for data, label in train_dataset.take(1)][0].shape.as_list()
+
+    model = DKT(model_params)
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    #######################################
+    # train parameters
+    #######################################
+    train(epoch=model_params['epoch'], model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+
+    #######################################
+    # save model
+    #######################################
+    results={'LC_params':LC_params, 'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'], temp['tf_Precision'], temp['tf_Recall'], temp['tf_AUC'], temp['tf_MAE'], temp['tf_RMSE']] = get_last_epoch_data(model, test_dataset)
+
+    model_params.pop("metrics_path")
+    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
+
 def runAssist():
     Features = {}
     Features['users'] = True
     Features['items'] = True
     Features['skills'] = True
-    Features['lasttime_0kcsingle'] = False
-    Features['lasttime_1kc'] = False
+    Features['lasttime_1kc'] = False 
     Features['lasttime_2items'] = False
     Features['lasttime_3sequence'] = False
-    Features['wins_1kc'] = False 
+    Features['interval_1kc'] = False
+    Features['interval_2items'] = False
+    Features['interval_3sequence'] = False
+    Features['wins_1kc'] = True
     Features['wins_2items'] = False
-    Features['wins_3das3h'] = False #用于das3h中特征
-    Features['wins_4das3hkc'] = False #用于das3h中特征
-    Features['wins_5das3hitems'] = False #用于das3h中特征   
-    Features['fails_1kc'] = False
+    Features['fails_1kc'] = True 
+    Features['fails_2items'] = False
     Features['attempts_1kc'] = False
     Features['attempts_2items'] = False
-    Features['attempts_3das3h'] = False #用于das3h中特征
-    Features['attempts_4das3hkc'] = False #用于das3h中特征
-    Features['attempts_5das3hitems'] = False #用于das3h中特征
     active = [key for key, value in Features.items() if value]
+    all_features = list(Features.keys())
     features_suffix = getFeaturesSuffix(active)
     window_lengths = [365 * 24 * 3600]
     ####################################### 
@@ -242,7 +321,8 @@ def runAssist():
     train_fraction=0.8
     dataset_params ={'active': active, 'window_lengths': window_lengths, 
                         'batch_size': batch_size, 'train_fraction': train_fraction}
-    train_dataset, test_dataset = a.loadKTMData(dataset_params)
+    train_dataset, test_dataset = a.loadKTMData(dataset_params, all_features)
+    os._exit(0)
 
     feature_num = [d for d, l in train_dataset.take(1)][0].shape[-1]
     print('feature_num: ', feature_num)
@@ -255,4 +335,5 @@ def runAssist():
     train(epoch=30, model=model, train_dataset=train_dataset, test_dataset=test_dataset)
 if __name__ == "__main__":
     runKDD()
+    runOJ()
     # runAssist()

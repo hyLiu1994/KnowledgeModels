@@ -4,4 +4,7 @@ DataProcessor/
 DataProcessor/data/
 DataProcessor/__pycache__/
 DataProcessor/utils/__pycache__/
+/__pycache__/
+DAS3H copy.py
+libfm/*
 
