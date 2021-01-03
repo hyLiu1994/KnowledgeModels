@@ -4,4 +4,5 @@ DataProcessor/
 DataProcessor/data/
 DataProcessor/__pycache__/
 DataProcessor/utils/__pycache__/
+/__pycache__/
 
