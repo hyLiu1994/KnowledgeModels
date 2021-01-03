@@ -48,7 +48,26 @@ class _DataProcessor:
 			dict_data[str(run_id)]={'train':users_train,'test':users_test}
 
 		saveDict(dict_data,self.LCDataDir, 'splitedInformation_kFold('+str(kFold)+').json')
+
 		return dict_data
+
+	def getLengthDistribution(self, kFold):
+		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
+		dictionary={'stud_id':[],'length':[]}
+		print(df.columns)
+		for stud_id in df['user_id'].unique():
+			df_stud = df[df['user_id']==stud_id][['user_id', 'item_id', 'timestamp', 'correct']].copy()
+			print(stud_id, len(df_stud))
+			dictionary['stud_id'].append(stud_id)
+			dictionary['length'].append(len(df_stud))
+		df_length = pd.DataFrame(dictionary)
+		# df_length.to_csv(os.path.join(self.LCDataDir,'studentSubmitLength.csv'), sep='\t', index=False)
+
+		dict_data = self.loadSplitInfo(kFold)
+
+		return df_length, dict_data
+
+		
 
 	def loadDKTbatchData(self, dataset_params):
 		trainRate = dataset_params["trainRate"]
@@ -633,7 +652,7 @@ if __name__ == "__main__":
 	isTest = True
 	isAll = False
 
-	datasetName = 'algebra05'
+	datasetName = 'algebra08'
 
 	if datasetName == 'algebra08':
 		if isTest == True:
@@ -684,10 +703,16 @@ if __name__ == "__main__":
 			high_time = "2007-06-20 13:36:57"
 			timeLC = [low_time, high_time]
 
-	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = '../data')
+	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = 'data')
 	[df, QMatrix, StaticInformation, DictList] = a.dataprocessor.loadLCData()
+	print(df.columns)
 	print('**************StaticInformation**************')
 	printDict(StaticInformation)
+	printDict(a.LC_params)
+
+	kFold = 5
+	df_length, dict_data = a.getLengthDistribution(kFold)
+
 
 	'''
 	Features = {}
@@ -777,6 +802,7 @@ if __name__ == "__main__":
 	test loadSparseDF
 	'''      
 
+	'''
 	Features = {}
 	Features['users'] = False #用于das3h中特征
 	Features['items'] = False #用于das3h中特征
@@ -803,4 +829,5 @@ if __name__ == "__main__":
 	print('**************sparse_df**************')
 	print(sparse_df.shape)
 	printDict(Length)
+	'''
 	
