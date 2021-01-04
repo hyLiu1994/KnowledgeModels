@@ -34,6 +34,7 @@ def DAS3H(a, active, tw, isKfold, model_params):
 	}
 
 	print(active)
+	print(tw)
 	prefix = ''
 	if set(active) == {'users', 'items'} and dim == 0:
 		prefix = 'IRT'
@@ -199,8 +200,8 @@ def runKDD(datasetName, isTest = True, isAll = False, TmpDir = "./data"):
 			high_time = "2009-01-01 00:00:00"
 			timeLC = [low_time, high_time]
 		if isAll == True:
-			userLC = [10, 1e9]
-			problemLC = [10, 1e9]
+			userLC = [20, 1e9]
+			problemLC = [0, 1e9]
 			low_time = "2008-09-08 14:46:48"
 			high_time = "2009-07-06 18:02:12"
 			timeLC = [low_time, high_time]
@@ -214,8 +215,8 @@ def runKDD(datasetName, isTest = True, isAll = False, TmpDir = "./data"):
 			high_time = "2006-06-07 11:12:38"
 			timeLC = [low_time, high_time]
 		else:
-			userLC = [10, 1e9]
-			problemLC = [10, 1e9]
+			userLC = [20, 1e9]
+			problemLC = [0, 1e9]
 			low_time = "2005-08-30 09:50:35"
 			high_time = "2006-06-07 11:12:38"
 			timeLC = [low_time, high_time]
@@ -228,8 +229,8 @@ def runKDD(datasetName, isTest = True, isAll = False, TmpDir = "./data"):
 			high_time = "2007-06-20 13:36:57"
 			timeLC = [low_time, high_time]
 		else:
-			userLC = [10, 1e9]
-			problemLC = [10, 1e9]
+			userLC = [20, 1e9]
+			problemLC = [0, 1e9]
 			low_time = "2006-10-05 08:26:16"
 			high_time = "2007-06-20 13:36:57"
 			timeLC = [low_time, high_time]
@@ -347,16 +348,66 @@ if __name__ == "__main__":
 	isKfold = True
 
 	# bridge_algebra06 algebra05
+	#a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
 	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 	
+	'''
+	#IRT
+	active_features = ['users', 'items']
+	features_suffix = 'ui'
+	tw = None
+
+	model_params = {
+		'dim': 0,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+ 
+	FM_params = {
+		'task': 'classification',
+		'num_iter': model_params['iter'],
+		'rlog': True,
+		'learning_method': 'mcmc',
+		'k2': model_params['dim']
+	}
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+	#MIRT
+	active_features = ['users', 'items']
+	features_suffix = 'ui'
+	tw = None
+
+	model_params = {
+		'dim': 5,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+ 
+	FM_params = {
+		'task': 'classification',
+		'num_iter': model_params['iter'],
+		'rlog': True,
+		'learning_method': 'mcmc',
+		'k2': model_params['dim']
+	}
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+
+	#AFM
 	active_features = ['skills', 'attempts']
 	features_suffix = 'sa'
 	tw = None
 
 	model_params = {
-		'dim': 20,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -374,11 +425,12 @@ if __name__ == "__main__":
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
 
+	#PFA
 	active_features = ['skills', 'wins', 'fails']
 	features_suffix = 'swf'
 	tw = None
 	model_params = {
-		'dim': 20,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -387,11 +439,12 @@ if __name__ == "__main__":
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
 
+	#KTM
 	active_features = ['items', 'skills', 'wins', 'fails']
 	features_suffix = 'iswf'
 	tw = None
 	model_params = {
-		'dim': 20,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -400,11 +453,12 @@ if __name__ == "__main__":
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
 
+	#DAS3H
 	active_features = ['users', 'items', 'skills', 'wins', 'attempts']
 	features_suffix = 'uiswat1'
-	tw = 't1'
+	tw = "tw_kc"
 	model_params = {
-		'dim': 20,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
@@ -412,12 +466,14 @@ if __name__ == "__main__":
 	}
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
+	'''
 
+	#DASH
 	active_features = ['users', 'items', 'wins', 'attempts']
 	features_suffix = 'uiwat2'
-	tw = 't2'
+	tw = "tw_items"
 	model_params = {
-		'dim': 20,
+		'dim': 5,
 		'kFold': 5,
 		'trainRate':0.8,
 		'iter': 300,
