@@ -294,6 +294,7 @@ def runAssist(datasetName = 'assistments12', isTest = True, isAll = False, TmpDi
 	return a
 
 if __name__ == "__main__":
+	'''
 	Features = {}
 	Features['users'] = True #用于das3h中特征
 	Features['items'] = True #用于das3h中特征
@@ -338,14 +339,89 @@ if __name__ == "__main__":
 		'learning_method': 'mcmc',
 		'k2': model_params['dim']
 	}
+	'''
 
 
 	# TmpDir = "./DataProcessor/data"
 	TmpDir = "./data"
 	isKfold = True
 
-	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = True, TmpDir = TmpDir)
-	#a = runOJ(isTest = True, isAll = False, TmpDir = TmpDir)
+	# bridge_algebra06 algebra05
+	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
+	#a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
+	
+	active_features = ['skills', 'attempts']
+	features_suffix = 'sa'
+	tw = None
+
+	model_params = {
+		'dim': 20,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+ 
+	FM_params = {
+		'task': 'classification',
+		'num_iter': model_params['iter'],
+		'rlog': True,
+		'learning_method': 'mcmc',
+		'k2': model_params['dim']
+	}
+
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+	active_features = ['skills', 'wins', 'fails']
+	features_suffix = 'swf'
+	tw = None
+	model_params = {
+		'dim': 20,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+	active_features = ['items', 'skills', 'wins', 'fails']
+	features_suffix = 'iswf'
+	tw = None
+	model_params = {
+		'dim': 20,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+	active_features = ['users', 'items', 'skills', 'wins', 'attempts']
+	features_suffix = 'uiswat1'
+	tw = 't1'
+	model_params = {
+		'dim': 20,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
+	results = DAS3H(a, active_features, tw, isKfold, model_params)
+	printDict(results['results'])
+
+	active_features = ['users', 'items', 'wins', 'attempts']
+	features_suffix = 'uiwat2'
+	tw = 't2'
+	model_params = {
+		'dim': 20,
+		'kFold': 5,
+		'trainRate':0.8,
+		'iter': 300,
+		'active_features': features_suffix
+	}
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
