@@ -117,8 +117,6 @@ class DKVMN(tf.keras.Model):
         w_t = tf.keras.activations.softmax(tf.matmul(k_t, self.mk, transpose_b=True))
         # p_t: [batch_size, 1]
         p_t = self.get_p_t(k_t, w_t, mv_tm1)
-        print(p_t.shape)
-        os._exit(0)
         # mv_t: [batch_size, m_N, mv_dim]
         mv_t = self.get_mv_t(w_t, skill_with_correct, mv_tm1)
         return p_t, mv_t
@@ -400,10 +398,10 @@ def set_run_eagerly(is_eager=False):
     else:
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
-    set_run_eagerly(True)
+    set_run_eagerly(False)
     
-    #runAssist(False)
-    #runOJ(False)
+    runAssist(False)
+    runOJ(False)
     runKDD(False)
 
 
