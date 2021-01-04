@@ -352,6 +352,8 @@ if __name__ == "__main__":
 	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
+
+	a.getExtraStatics()
 	
 	'''
 	#IRT
