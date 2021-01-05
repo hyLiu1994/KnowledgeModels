@@ -67,13 +67,62 @@ class _DataProcessor:
 
 		return df_length, dict_data
 
+	def loadAKTData(self, dataset_params):
+		trainRate = dataset_params["trainRate"]
+		batch_size = dataset_params["batch_size"]
+		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 		
+		data = df.groupby('user_id').apply(lambda r: (r['item_id'].values, r['timestamp'].values, r['correct'].values))
+
+		item, timestamp, correct = list(), list(), list()
+		for it in data:
+			item.append(it[0])
+			timestamp.append(it[1])
+			correct.append(it[2])
+		
+		def __to_dataset(data):
+			data = tf.ragged.constant(data)
+			data = tf.data.Dataset.from_tensor_slices(data)
+			data = data.map(lambda x: x)
+			return data
+
+		item = __to_dataset(item)
+		timestamp = __to_dataset(timestamp)
+		correct = __to_dataset(correct)
+
+		dataset = tf.data.Dataset.zip((item, timestamp, correct))
+
+		# dim
+		dataset = dataset.map(lambda item, timestamp, correct: (tf.expand_dims(item, axis=-1),tf.expand_dims(timestamp, axis=-1), tf.expand_dims(correct, axis=-1), correct))
+		# concat
+		dataset = dataset.map(lambda item, timestamp, correct, label: (tf.concat([item, timestamp, correct], axis=-1), label))
+
+		def __split_dataset(dataset, trainRate):
+			if tf.__version__ == '2.2.0':
+				data_size = tf.data.experimental.cardinality(dataset).numpy()
+			else:
+				data_size = dataset.cardinality().numpy()
+			train_size = int(data_size * trainRate)
+			print("train_size: ", train_size)
+			print("test_size: ", data_size -  train_size)
+
+			train_dataset = dataset.take(train_size)
+			test_dataset = dataset.skip(train_size)
+			return train_dataset, test_dataset
+
+		train_dataset, test_dataset = __split_dataset(dataset, trainRate)
+		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
+		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
+		return train_dataset, test_dataset, QMatrix
+
+			
 
 	def loadDKTbatchData(self, dataset_params):
 		trainRate = dataset_params["trainRate"]
 		batch_size = dataset_params["batch_size"]
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
 		df = df.drop(['timestamp'],axis=1)
+		df['item_id'] = df['item_id'] + 1
 		item_num = StaticInformation['itemNum']
 		df['skill_id_with_correct'] = df['correct'] * item_num + df['item_id']
 
@@ -136,7 +185,7 @@ class _DataProcessor:
 		df = df.drop(['timestamp'],axis=1)
 		item_num = StaticInformation['itemNum']
 		df['skill_id_with_correct'] = df['correct'] * item_num + df['item_id']
-
+		df['item_id'] = df['item_id'] + 1
 		data = df.groupby('user_id').apply(
 			lambda r: (r['skill_id_with_correct'].values,
 					   r['item_id'].values,
