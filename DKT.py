@@ -63,6 +63,13 @@ class DKT(tf.keras.Model):
         pred = tf.squeeze(pred, axis=-1)
         float_mask = tf.cast(mask, dtype=tf.float32)
         loss = self.loss_obj(label, pred, float_mask)
+        '''
+        print("======================")
+        print(label.shape)
+        print(pred.shape)
+        print(mask.shape)
+        os._exit(0)
+        '''
         # metrics
         self.metrics_loss.update_state(label, pred, mask)
         self.metrics_acc.update_state(label, pred, mask)
@@ -173,7 +180,7 @@ def get_last_epoch_data(model, dataset):
     return (model.metrics_acc.result(), model.metrics_pre.result(), model.metrics_rec.result(), 
     model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result())
 
-def runKDD(is_test=True):
+def runKDD(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -196,8 +203,8 @@ def runKDD(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -211,7 +218,7 @@ def runKDD(is_test=True):
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
     model_params['threshold'] = 0.5
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
     model_params["data_shape"] = [data for data, label in train_dataset.take(1)][0].shape.as_list()
 
     model = DKT(model_params)
@@ -235,7 +242,7 @@ def runKDD(is_test=True):
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
 
-def runOJ(is_test=True):
+def runOJ(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -259,7 +266,8 @@ def runOJ(is_test=True):
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
 
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -273,7 +281,7 @@ def runOJ(is_test=True):
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
     model_params['threshold'] = 0.5
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
     model_params["data_shape"] = [data for data, label in train_dataset.take(1)][0].shape.as_list()
 
     model = DKT(model_params)
@@ -297,7 +305,7 @@ def runOJ(is_test=True):
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
 
-def runAssist(is_test=True):
+def runAssist(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -321,8 +329,8 @@ def runAssist(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -336,7 +344,7 @@ def runAssist(is_test=True):
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
     model_params['threshold'] = 0.5
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
     model_params["data_shape"] = [data for data, label in train_dataset.take(1)][0].shape.as_list()
 
     model = DKT(model_params)
@@ -366,8 +374,11 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
-    # runOJ(False)
-    # runKDD(False)
-    runAssist(False)
+    for i in range(5):
+        runOJ(i, True)
+    for i in range(5):
+        runKDD(i, True)
+    for i in range(5):
+        runAssist(i, True)
 
 
