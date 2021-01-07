@@ -118,7 +118,68 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size,  drop_remainder=False)
 		return train_dataset, test_dataset, QMatrix
 
-	def df2dataset(self, df, StaticInformation, batch_size):
+	def loadDKVMNbatchData_5F(self, dataset_params, fold_id):
+		trainRate = dataset_params["trainRate"]
+		batch_size = dataset_params["batch_size"]
+		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
+		df = df.drop(['timestamp'],axis=1)
+		item_num = StaticInformation['itemNum']
+		df['skill_id_with_correct'] = df['correct'] * item_num + df['item_id']
+		df['item_id'] = df['item_id'] + 1
+		data = df.groupby('user_id').apply(
+			lambda r: (r['skill_id_with_correct'].values,
+					   r['item_id'].values,
+					   r['correct'].values)
+		)
+		i = 0
+		users = []
+		items = []
+		corrects = []
+		for it in data:
+			if i%100 == 0:
+				print(i,'/',len(df))
+			i += 1
+			users.append(list(it[0]))
+			items.append(list(it[1]))
+			corrects.append(list(it[2]))
+
+		def __to_dataset(data):
+			data = tf.ragged.constant(data)
+			data = tf.data.Dataset.from_tensor_slices(data)
+			data = data.map(lambda x: x)
+			return data
+
+		users = __to_dataset(users)
+		items = __to_dataset(items)
+		corrects = __to_dataset(corrects)
+
+		dataset = tf.data.Dataset.zip((users, items, corrects))
+		# dtype
+		dataset = dataset.map(lambda inputs, data, label: (tf.cast(inputs, dtype=tf.int32), tf.cast(data, dtype=tf.int32), tf.cast(label, dtype=tf.float32))
+							  )
+		# dim
+		dataset = dataset.map(lambda inputs, data, label: (tf.expand_dims(inputs, axis=-1), tf.expand_dims(data, axis=-1), tf.expand_dims(label, axis=-1))
+							  )
+		# concat
+		dataset = dataset.map(lambda inputs, data, label: (tf.concat([data, inputs], axis=-1), label)
+							  )
+
+		def __split_dataset(dataset, trainRate):
+			if tf.__version__ == '2.2.0':
+				data_size = tf.data.experimental.cardinality(dataset).numpy()
+			else:
+				data_size = dataset.cardinality().numpy()
+			train_size = int(data_size * trainRate)
+
+			train_dataset = dataset.take(train_size)
+			test_dataset = dataset.skip(train_size)
+			return train_dataset, test_dataset
+
+		train_dataset, test_dataset = __split_dataset(dataset, trainRate)
+		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
+		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
+		return train_dataset, test_dataset, item_num
+	def df2dataset_DKT(self, df, StaticInformation, batch_size):
 		df = df.drop(['timestamp'],axis=1)
 		df['item_id'] = df['item_id'] + 1
 		item_num = StaticInformation['itemNum']
@@ -157,6 +218,52 @@ class _DataProcessor:
 							  )
 		# concat
 		dataset = dataset.map(lambda inputs, data, label: (inputs, tf.concat([data, label], axis=-1))
+							  )
+
+		dataset = dataset.padded_batch(batch_size, drop_remainder=False)
+		return dataset
+
+	def df2dataset_DKVMN(self, df, StaticInformation, batch_size):
+		df = df.drop(['timestamp'],axis=1)
+		item_num = StaticInformation['itemNum']
+		df['skill_id_with_correct'] = df['correct'] * item_num + df['item_id']
+		df['item_id'] = df['item_id'] + 1
+		data = df.groupby('user_id').apply(
+			lambda r: (r['skill_id_with_correct'].values,
+					   r['item_id'].values,
+					   r['correct'].values)
+		)
+		i = 0
+		users = []
+		items = []
+		corrects = []
+		for it in data:
+			if i%100 == 0:
+				print(i,'/',len(df))
+			i += 1
+			users.append(list(it[0]))
+			items.append(list(it[1]))
+			corrects.append(list(it[2]))
+
+		def __to_dataset(data):
+			data = tf.ragged.constant(data)
+			data = tf.data.Dataset.from_tensor_slices(data)
+			data = data.map(lambda x: x)
+			return data
+
+		users = __to_dataset(users)
+		items = __to_dataset(items)
+		corrects = __to_dataset(corrects)
+
+		dataset = tf.data.Dataset.zip((users, items, corrects))
+		# dtype
+		dataset = dataset.map(lambda inputs, data, label: (tf.cast(inputs, dtype=tf.int32), tf.cast(data, dtype=tf.int32), tf.cast(label, dtype=tf.float32))
+							  )
+		# dim
+		dataset = dataset.map(lambda inputs, data, label: (tf.expand_dims(inputs, axis=-1), tf.expand_dims(data, axis=-1), tf.expand_dims(label, axis=-1))
+							  )
+		# concat
+		dataset = dataset.map(lambda inputs, data, label: (tf.concat([data, inputs], axis=-1), label)
 							  )
 
 		dataset = dataset.padded_batch(batch_size, drop_remainder=False)
@@ -238,66 +345,19 @@ class _DataProcessor:
 		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
 		return train_dataset, test_dataset, item_num
 
-	def loadDKVMNbatchData(self, dataset_params):
+	def loadDKVMNbatchData_5F(self, dataset_params, fold_id):
 		trainRate = dataset_params["trainRate"]
 		batch_size = dataset_params["batch_size"]
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
-		df = df.drop(['timestamp'],axis=1)
 		item_num = StaticInformation['itemNum']
-		df['skill_id_with_correct'] = df['correct'] * item_num + df['item_id']
-		df['item_id'] = df['item_id'] + 1
-		data = df.groupby('user_id').apply(
-			lambda r: (r['skill_id_with_correct'].values,
-					   r['item_id'].values,
-					   r['correct'].values)
-		)
-		i = 0
-		users = []
-		items = []
-		corrects = []
-		for it in data:
-			if i%100 == 0:
-				print(i,'/',len(df))
-			i += 1
-			users.append(list(it[0]))
-			items.append(list(it[1]))
-			corrects.append(list(it[2]))
-
-		def __to_dataset(data):
-			data = tf.ragged.constant(data)
-			data = tf.data.Dataset.from_tensor_slices(data)
-			data = data.map(lambda x: x)
-			return data
-
-		users = __to_dataset(users)
-		items = __to_dataset(items)
-		corrects = __to_dataset(corrects)
-
-		dataset = tf.data.Dataset.zip((users, items, corrects))
-		# dtype
-		dataset = dataset.map(lambda inputs, data, label: (tf.cast(inputs, dtype=tf.int32), tf.cast(data, dtype=tf.int32), tf.cast(label, dtype=tf.float32))
-							  )
-		# dim
-		dataset = dataset.map(lambda inputs, data, label: (tf.expand_dims(inputs, axis=-1), tf.expand_dims(data, axis=-1), tf.expand_dims(label, axis=-1))
-							  )
-		# concat
-		dataset = dataset.map(lambda inputs, data, label: (tf.concat([data, inputs], axis=-1), label)
-							  )
-
-		def __split_dataset(dataset, trainRate):
-			if tf.__version__ == '2.2.0':
-				data_size = tf.data.experimental.cardinality(dataset).numpy()
-			else:
-				data_size = dataset.cardinality().numpy()
-			train_size = int(data_size * trainRate)
-
-			train_dataset = dataset.take(train_size)
-			test_dataset = dataset.skip(train_size)
-			return train_dataset, test_dataset
-
-		train_dataset, test_dataset = __split_dataset(dataset, trainRate)
-		train_dataset = train_dataset.padded_batch(batch_size, drop_remainder=False)
-		test_dataset = test_dataset.padded_batch(batch_size, drop_remainder=False)
+		dict_data = self.loadSplitInfo(dataset_params['kFold'])
+		train_uid = dict_data[str(fold_id)]['train'] 
+		test_uid =  dict_data[str(fold_id)]['test']
+		train_df = df[df['user_id'].isin(train_uid)]
+		test_df = df[df['user_id'].isin(test_uid)]
+		train_dataset = self.df2dataset_DKVMN(train_df, StaticInformation, batch_size)
+		test_dataset = self.df2dataset_DKVMN(test_df, StaticInformation, batch_size)
+		return train_dataset, test_dataset, item_num
 		return train_dataset, test_dataset, item_num
 
 	def loadDAS3HData(self, active_features = ['skills'], features_suffix = '', trainRate = 0.8, tw = None, verbose = True):

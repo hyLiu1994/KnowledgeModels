@@ -219,7 +219,7 @@ def train(epoch, model, train_dataset, test_dataset):
                     "test_rmse: ", test_rmse)
             start = tf.timestamp()
 
-def runKDD(is_test=True):
+def runKDD(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -242,8 +242,8 @@ def runKDD(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -255,7 +255,7 @@ def runKDD(is_test=True):
     model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
 
     model = DKVMN(model_params)
     if is_test:
@@ -277,7 +277,7 @@ def runKDD(is_test=True):
     model_params.pop("metrics_path")
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
-def runOJ(is_test=True):
+def runOJ(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -301,7 +301,8 @@ def runOJ(is_test=True):
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
 
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -313,7 +314,7 @@ def runOJ(is_test=True):
     model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
 
     model = DKVMN(model_params)
     if is_test:
@@ -335,7 +336,7 @@ def runOJ(is_test=True):
     model_params.pop("metrics_path")
     saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
-def runAssist(is_test=True):
+def runAssist(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -358,8 +359,8 @@ def runAssist(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-
-    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData(dataset_params)
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, problem_num] = data_processor.loadDKVMNbatchData_5F(dataset_params, fold_id)
     #######################################
     # model parameters
     #######################################
@@ -371,7 +372,7 @@ def runAssist(is_test=True):
     model_params['data_shape'] = [data for data, label in train_dataset][0].shape.as_list()
     model_params['problem_num'] = problem_num
     model_params['epoch'] = 200
-    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params['metrics_path'] = saveDir + '/metrics' + str(fold_id) + '.csv'
 
     model = DKVMN(model_params)
     if is_test:
@@ -399,9 +400,11 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
-    
-    runAssist(False)
-    runOJ(False)
-    runKDD(False)
+    for i in range(5):
+        runOJ(i, True)
+    for i in range(5):
+        runKDD(i, True)
+    for i in range(5):
+        runAssist(i, True)
 
 
