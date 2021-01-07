@@ -279,8 +279,8 @@ class _DataProcessor:
 		test_uid =  dict_data[str(fold_id)]['test']
 		train_df = df[df['user_id'].isin(train_uid)]
 		test_df = df[df['user_id'].isin(test_uid)]
-		train_dataset = self.df2dataset(train_df, StaticInformation, batch_size)
-		test_dataset = self.df2dataset(test_df, StaticInformation, batch_size)
+		train_dataset = self.df2dataset_DKT(train_df, StaticInformation, batch_size)
+		test_dataset = self.df2dataset_DKT(test_df, StaticInformation, batch_size)
 		return train_dataset, test_dataset, item_num
 
 
