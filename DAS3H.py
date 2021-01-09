@@ -349,8 +349,8 @@ if __name__ == "__main__":
 
 	# bridge_algebra06 algebra05
 	#a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
-	a = runKDD(datasetName = 'bridge_algebra06', isTest = False, isAll = False, TmpDir = TmpDir)
-	#a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
+	#a = runKDD(datasetName = 'algebra08', isTest = False, isAll = False, TmpDir = TmpDir)
+	a = runOJ(isTest = False, isAll = False, TmpDir = TmpDir)
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 
 	a.getExtraStatics()
@@ -446,15 +446,15 @@ if __name__ == "__main__":
 	features_suffix = 'iswf'
 	tw = None
 	model_params = {
-		'dim': 5,
+		'dim': 0,
 		'kFold': 5,
 		'trainRate':0.8,
-		'iter': 300,
+		'iter': 500,
 		'active_features': features_suffix
 	}
 	results = DAS3H(a, active_features, tw, isKfold, model_params)
 	printDict(results['results'])
-
+'''
 	#DAS3H
 	active_features = ['users', 'items', 'skills', 'wins', 'attempts']
 	features_suffix = 'uiswat1'
@@ -466,10 +466,14 @@ if __name__ == "__main__":
 		'iter': 300,
 		'active_features': features_suffix
 	}
-	results = DAS3H(a, active_features, tw, isKfold, model_params)
-	printDict(results['results'])
-	'''
+	for i in range(21):
+		if(i==0)|(i==5)|(i==20):
+			model_params['dim']=i
+			results = DAS3H(a, active_features, tw, isKfold, model_params)
+			printDict(results['results'])
 
+	
+	
 	#DASH
 	active_features = ['users', 'items', 'wins', 'attempts']
 	features_suffix = 'uiwat2'
@@ -481,5 +485,9 @@ if __name__ == "__main__":
 		'iter': 300,
 		'active_features': features_suffix
 	}
-	results = DAS3H(a, active_features, tw, isKfold, model_params)
-	printDict(results['results'])
+	for i in range(21):
+		if(i==0)|(i==5)|(i==20):
+			model_params['dim']=i
+			results = DAS3H(a, active_features, tw, isKfold, model_params)
+			printDict(results['results'])
+
