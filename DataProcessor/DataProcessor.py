@@ -71,17 +71,15 @@ class _DataProcessor:
 		trainRate = dataset_params["trainRate"]
 		batch_size = dataset_params["batch_size"]
 		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
-		
 		data = df.groupby('user_id').apply(lambda r: (r['item_id'].values, r['timestamp'].values, r['correct'].values))
-
 		df['item_id'] = df['item_id'] + 1
 		problem_num = len(df['item_id'].unique())
 
 		item, timestamp, correct = list(), list(), list()
 		for it in data:
-			item.append(it[0])
-			timestamp.append(it[1])
-			correct.append(it[2])
+                        item.append(it[0])
+                        timestamp.append(it[1] / (24 * 3600))
+                        correct.append(it[2])
 		
 		def __to_dataset(data):
 			data = tf.ragged.constant(data)
@@ -94,7 +92,8 @@ class _DataProcessor:
 		correct = __to_dataset(correct)
 
 		dataset = tf.data.Dataset.zip((item, timestamp, correct))
-
+                # dtype
+		dataset = dataset.map(lambda item, timestamp, correct: (tf.cast(item, dtype=tf.float32),tf.cast(timestamp, dtype=tf.float32), tf.cast(correct, dtype=tf.float32)))
 		# dim
 		dataset = dataset.map(lambda item, timestamp, correct: (tf.expand_dims(item, axis=-1),tf.expand_dims(timestamp, axis=-1), tf.expand_dims(correct, axis=-1), correct))
 		# concat

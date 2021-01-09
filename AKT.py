@@ -30,15 +30,16 @@ def fake_data():
     return pid, res, time, Q, pid_num, cid_num
 
 class Encoder(tf.keras.layers.Layer):
-    def __init__(self, num_head, dim):
+    def __init__(self, model_name, num_head, dim):
         super(Encoder, self).__init__()
+        self.model_name = model_name
         self.num_head = num_head
         self.dim = dim
-        self.wQ = self.add_weight(name="wQ", shape=(self.num_head, self.dim, self.dim))
-        self.wK = self.add_weight(name="wK", shape=(self.num_head, self.dim, self.dim))
-        self.wV = self.add_weight(name="wV", shape=(self.num_head, self.dim, self.dim))
-        self.wO = self.add_weight(name="wO", shape=(self.num_head * self.dim, self.dim))
-        self.theta = self.add_weight(name="theta", shape=(1, 1))
+        self.wQ = self.add_weight(name=self.model_name + "wQ", shape=(self.num_head, self.dim, self.dim))
+        self.wK = self.add_weight(name=self.model_name + "wK", shape=(self.num_head, self.dim, self.dim))
+        self.wV = self.add_weight(name=self.model_name + "wV", shape=(self.num_head, self.dim, self.dim))
+        self.wO = self.add_weight(name=self.model_name + "wO", shape=(self.num_head * self.dim, self.dim))
+        self.theta = self.add_weight(name=self.model_name + "theta", shape=(1, 1))
 
     def time_factor(self, x, timestamp, low_tri):
         x = tf.math.cumsum(x, axis=-1)
@@ -61,14 +62,14 @@ class Encoder(tf.keras.layers.Layer):
         low_tri = self.get_tri_mask(seq_len)
         x = x * low_tri
         # normalize
-        x = tf.divide(x, tf.reduce_sum(x, axis=-1, keepdims=True))
+        x = tf.math.divide_no_nan(x, tf.reduce_sum(x, axis=-1, keepdims=True))
         d = self.time_factor(x, timestamp, low_tri)
         s = exp_x * tf.exp(-1 * self.theta * self.theta * d)
         a = tf.keras.activations.softmax(s)
         a = a * low_tri
         # normalize
-        a = tf.divide(a, tf.reduce_sum(a, axis=-1, keepdims=True))
-        ret = x @ V
+        a = tf.math.divide_no_nan(a, tf.reduce_sum(a, axis=-1, keepdims=True))
+        ret = a @ V
         return ret
     
     def multi_attention(self, inputs, timestamp):
@@ -88,8 +89,8 @@ class Encoder(tf.keras.layers.Layer):
 
 
 class KnowledgeRetriever(Encoder):
-    def __init__(self, num_head, dim):
-        super(KnowledgeRetriever, self).__init__(num_head, dim)
+    def __init__(self, model_name, num_head, dim):
+        super(KnowledgeRetriever, self).__init__(model_name, num_head, dim)
     
     def get_tri_mask(self, seq_len):
         low_tri = 1 - tf.linalg.band_part(tf.ones((seq_len, seq_len)), 0, -1)
@@ -128,10 +129,10 @@ class AKT(tf.keras.Model):
 
         self.d = tf.keras.layers.Dense(units=1, activation='sigmoid')
 
-        self.q_encoder = Encoder(self.num_head, self.embed_dim)
-        self.k_encoder = Encoder(self.num_head, self.embed_dim)
+        self.q_encoder = Encoder("q_encoder", self.num_head, self.embed_dim)
+        self.k_encoder = Encoder("k_encoder", self.num_head, self.embed_dim)
 
-        self.knowledge_retriever = KnowledgeRetriever(self.num_head, self.embed_dim)
+        self.knowledge_retriever = KnowledgeRetriever("knowledge_retriver", self.num_head, self.embed_dim)
 
         self.loss_obj = tf.keras.losses.BinaryCrossentropy()
         # opti
@@ -140,8 +141,29 @@ class AKT(tf.keras.Model):
         self.metrics_format = "epoch,time,train_loss,train_acc,train_pre,train_rec,train_auc,train_mae,train_rmse,test_loss,test_acc,test_pre,test_rec,test_auc,test_mae,test_rmse"
         self.metrics_path = 'file://' + model_params['metrics_path']
 
+        # metrics
+        self.metrics_loss = tf.keras.metrics.BinaryCrossentropy()
+        self.metrics_acc = tf.keras.metrics.BinaryAccuracy()
+        self.metrics_pre = tf.keras.metrics.Precision()
+        self.metrics_rec = tf.keras.metrics.Recall()
+        self.metrics_auc = tf.keras.metrics.AUC()
+        self.metrics_mae = tf.keras.metrics.MeanAbsoluteError()
+        self.metrics_rmse = tf.keras.metrics.RootMeanSquaredError()
+
+    def resetMetrics(self):
+        self.metrics_loss.reset_states()
+        self.metrics_acc.reset_states()
+        self.metrics_pre.reset_states()
+        self.metrics_rec.reset_states()
+        self.metrics_auc.reset_states()
+        self.metrics_mae.reset_states()
+        self.metrics_rmse.reset_states()
+        return 
     def call(self, inputs):
         item, timestamp, correct = tf.split(inputs, num_or_size_splits=3, axis=-1)
+
+        item = tf.cast(item, dtype=tf.int32)
+        correct = tf.cast(correct, dtype=tf.int32)
         item = tf.squeeze(item, axis=-1)
         item = item - 1
         timestamp = tf.squeeze(timestamp, axis=-1)
@@ -149,19 +171,20 @@ class AKT(tf.keras.Model):
         item_one_hot = tf.one_hot(tf.cast(item, dtype=tf.int32), depth=self.problem_num)
         concept = tf.matmul(item_one_hot, self.Q)
         self.mu_q = tf.reshape(self.mu_q, shape=(1, self.concept_num))
-        seq_mu_q = concept * self.mu_q
+        concept_mu_q = concept * self.mu_q
         seq_concept_embed = tf.matmul(concept, self.c_embed)
-        x = seq_mu_q @ self.d_embed + seq_concept_embed
+        # mu_q_t @ d_c_t + C_c_t
+        x = concept_mu_q @ self.d_embed + seq_concept_embed
         concept_num = tf.reduce_sum(concept, axis=-1, keepdims=True)
         correct_one_hot = tf.one_hot(correct, depth=2)
         seq_r_embed = tf.matmul(correct_one_hot, self.r_embed)
 
-        y = seq_r_embed * concept_num + seq_mu_q @ self.f_embed
+        y = seq_r_embed * concept_num + concept_mu_q @ self.f_embed
 
         x_hat = self.q_encoder.multi_attention(x, timestamp)
         y_hat = self.k_encoder.multi_attention(y, timestamp)
         output = self.knowledge_retriever.multi_attention(x_hat, y_hat, timestamp)
-        output = output[:, 1:, :] 
+        output = output[:, 1:, :]
         output_shape = tf.shape(output)
         pad_shape = tf.concat([output_shape[:1], [1], output_shape[2:]], axis=-1)
         pad = tf.zeros(pad_shape)
@@ -180,8 +203,24 @@ class AKT(tf.keras.Model):
     def loss_function(self, pred, label, mask):
         label = tf.expand_dims(label, axis=-1)
         loss = self.loss_obj(label, pred, mask)
+        self.update_metrics(label, pred, mask)
         return loss
 
+    def update_metrics(self, label, pred, mask):
+        # metrics
+        self.metrics_loss.update_state(label, pred, mask)
+        self.metrics_acc.update_state(label, pred, mask)
+        self.metrics_pre.update_state(label, pred, mask)
+        self.metrics_rec.update_state(label, pred, mask)
+        self.metrics_auc.update_state(label, pred, mask)
+        self.metrics_mae.update_state(label, pred, mask)
+        self.metrics_rmse.update_state(label, pred, mask)
+
+    @tf.function(experimental_relax_shapes=True)
+    def metrics_step(self, data, label):
+        pred = self(data)
+        mask = self.get_mask(data)
+        self.loss_function(pred, label, mask)
 
     @tf.function(experimental_relax_shapes=True)
     def train_step(self, data, label):
@@ -191,7 +230,6 @@ class AKT(tf.keras.Model):
             loss = self.loss_function(pred, label, mask)
         grad = tape.gradient(loss, self.trainable_variables)
         self.opti.apply_gradients(zip(grad, self.trainable_variables))
-
 
 @tf.function
 def test(model, dataset):
@@ -205,7 +243,6 @@ def train(epoch, model, train_dataset, test_dataset):
     start = tf.timestamp()
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
         model.train_step(data, label)
-        os._exit(0)
         if tf.equal(tf.math.floormod(i+1, element_num), 0):
             end = tf.timestamp()
             train_loss, train_acc, train_pre, train_rec, train_auc, train_mae, train_rmse = model.metrics_loss.result(),  model.metrics_acc.result(),  model.metrics_pre.result(), model.metrics_rec.result(), model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result()
@@ -221,12 +258,12 @@ def train(epoch, model, train_dataset, test_dataset):
                     test_loss, test_acc, test_pre, test_rec, test_auc, test_mae, test_rmse,
                     sep=',', output_stream=model.metrics_path)
 
-            tf.print("epoch: ", tf.math.floordiv(i+1, element_num), "time: ", end - start, 
-                    "train_loss: ", train_loss,  "train_acc: ", train_acc, 
+            tf.print("epoch: ", tf.math.floordiv(i+1, element_num), "time: ", end - start,
+                    "train_loss: ", train_loss,  "train_acc: ", train_acc,
                     "train_pre: ", train_pre, "train_rec: ", train_rec,
                     "train_auc: ", train_auc, "train_mae: ", train_mae,
                     "train_rmse: ", train_rmse,
-                    "test_loss: ", test_loss,  "test_acc: ", test_acc, 
+                    "test_loss: ", test_loss,  "test_acc: ", test_acc,
                     "test_pre: ", test_pre, "test_rec: ", test_rec,
                     "test_auc: ", test_auc, "test_mae: ", test_mae,
                     "test_rmse: ", test_rmse)
@@ -303,7 +340,7 @@ def runKDD(is_test=True):
     problemLC = [30, 1e9]
     # algebra08原始数据里的最值，可以注释，不要删
     low_time = "2008-09-08 14:46:48"
-    high_time = "2009-01-01 00:00:00"
+    high_time = "2008-10-08 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
 
@@ -318,7 +355,6 @@ def runKDD(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-    print("===============Test===============")
     [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData(dataset_params)
     Q_matrix = Q_matrix.toarray().astype(np.float32)
 
@@ -336,9 +372,6 @@ def runKDD(is_test=True):
     model_params['Q_matrix'] = Q_matrix
     model_params['num_head'] = 5
 
-    print("=================")
-    print(Q_matrix.shape)
-
     model = AKT(model_params)
     if is_test:
         train_dataset = train_dataset.take(10)
@@ -348,7 +381,6 @@ def runKDD(is_test=True):
     # train parameters
     #######################################
     train(epoch=model_params['epoch'], model=model, train_dataset=train_dataset, test_dataset=test_dataset)
-
     #######################################
     # save model
     #######################################
@@ -358,7 +390,7 @@ def runKDD(is_test=True):
 
     model_params.pop("metrics_path")
     model_params.pop("Q_matrix")
-    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
+    saveDict(results, saveDir, 'results' + getLegend(model_params) + '.json')
 
 def set_run_eagerly(is_eager=False):
     if tf.__version__ == "2.2.0":
@@ -366,6 +398,6 @@ def set_run_eagerly(is_eager=False):
     else:
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
+    tf.debugging.enable_check_numerics()
     set_run_eagerly(True)
     runOJ(is_test=True)
-    # runKDD(is_test=True)
