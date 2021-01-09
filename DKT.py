@@ -173,22 +173,46 @@ def get_last_epoch_data(model, dataset):
     return (model.metrics_acc.result(), model.metrics_pre.result(), model.metrics_rec.result(), 
     model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result())
 
-def runKDD(is_test=True):
+def runKDD(is_test=True, datasetName = 'algebra05'):
     #######################################
     # LC parameters
     #######################################
-    userLC = [30, 3600]
-    problemLC = [30, 1e9]
-    # algebra08原始数据里的最值，可以注释，不要删
-    low_time = "2008-09-08 14:46:48"
-    high_time = "2009-01-01 00:00:00"
-    timeLC = [low_time, high_time]
-    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
+    if datasetName == 'algebra08':
+        userLC = [30, 3600]
+        problemLC = [30, 1e9]
+        low_time = "2008-09-08 14:46:48"
+        high_time = "2009-01-01 00:00:00"
+        timeLC = [low_time, high_time]
+    elif datasetName == 'algebra05':
+        userLC = [20, 1e9]
+        problemLC = [0, 1e9]
+        low_time = "2005-08-30 09:50:35"
+        high_time = "2006-06-07 11:12:38"
+        _time = "2005-09-3 09:50:35"
+        timeLC = [low_time, high_time]
+
+    elif datasetName == 'bridge_algebra06':
+        userLC = [20, 1e9]
+        problemLC = [0, 1e9]
+        low_time = "2006-10-05 08:26:16"
+        high_time = "2007-06-20 13:36:57"
+        timeLC = [low_time, high_time]
+    '''
+        userLC = [30, 3600]
+        problemLC = [30, 1e9]
+        # algebra08原始数据里的最值，可以注释，不要删
+        low_time = "2008-09-08 14:46:48"
+        high_time = "2009-01-01 00:00:00"
+        timeLC = [low_time, high_time]
+    '''
+    #data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
+    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd',datasetName = datasetName)
 
     LCDataDir = data_processor.LCDataDir
     saveDir = os.path.join(LCDataDir, 'DKT')
     print("===================================")
     print("metrics save path: ", saveDir)
+    print("dataset is: ", datasetName)
     print("===================================")
     prepareFolder(saveDir)
     LC_params = data_processor.LC_params
@@ -245,7 +269,7 @@ def runOJ(is_test=True):
     low_time = "2018-06-01 00:00:00" 
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
-    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
+    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./data")
 
     LCDataDir = data_processor.LCDataDir
     saveDir = os.path.join(LCDataDir, 'DKT')
@@ -320,7 +344,7 @@ def runAssist(is_test=True):
 
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
-    dataset_params["batch_size"] = 32
+    dataset_params["batch_size"] = 4
 
     [train_dataset, test_dataset, problem_num] = data_processor.loadDKTbatchData(dataset_params)
     #######################################
@@ -366,8 +390,9 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     set_run_eagerly(False)
-    # runOJ(False)
-    # runKDD(False)
-    runAssist(False)
+    runOJ(False)
+    #runKDD(False,'algebra05')
+    #runKDD(False,'bridge_algebra06')
+    #runAssist(False)
 
 
