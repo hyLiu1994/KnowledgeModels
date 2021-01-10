@@ -180,11 +180,7 @@ def get_last_epoch_data(model, dataset):
     return (model.metrics_acc.result(), model.metrics_pre.result(), model.metrics_rec.result(), 
     model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result())
 
-<<<<<<< HEAD
 def runKDD(is_test=True, datasetName = 'algebra05'):
-=======
-def runKDD(fold_id, is_test=True):
->>>>>>> 8a88376ac44469e71ac2da27bc9a69022581929c
     #######################################
     # LC parameters
     #######################################
