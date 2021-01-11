@@ -67,6 +67,61 @@ class _DataProcessor:
 
 		return df_length, dict_data
 
+	def loadAKTData_5F(self, dataset_params, fold_id):
+		trainRate = dataset_params["trainRate"]
+		batch_size = dataset_params["batch_size"]
+		[df, QMatrix, StaticInformation, DictList] = self.dataprocessor.loadLCData()
+		item_num = StaticInformation['itemNum']
+		dict_data = self.loadSplitInfo(dataset_params['kFold'])
+		train_uid = dict_data[str(fold_id)]['train']
+		test_uid = dict_data[str(fold_id)]['test']
+		train_df = df[df['user_id'].isin(train_uid)]
+		test_df = df[df['user_id'].isin(test_uid)]
+		train_dataset = self.df2dataset_AKT(train_df, StaticInformation, batch_size)
+		test_dataset = self.df2dataset_AKT(test_df, StaticInformation, batch_size)
+		return train_dataset, test_dataset, QMatrix
+		
+
+	def df2dataset_AKT(self, df, StaticInformation, batch_size):
+		data = df.groupby('user_id').apply(lambda r: (r['item_id'].values, r['timestamp'].values, r['correct'].values))
+		df['item_id'] = df['item_id'] + 1
+		problem_num = len(df['item_id'].unique())
+
+		item, timestamp, correct = list(), list(), list()
+		def split_seq(inputs, max_len=500):
+			seq_len = len(inputs)
+			subseq_num = seq_len // max_len + int(seq_len % max_len != 0)
+			subseq = list()
+			for i in range(subseq_num):
+				subseq.append(inputs[i*max_len:(i+1)*max_len])
+			return subseq
+
+		for it in data:
+			item += split_seq(it[0])
+			timestamp += split_seq(it[1] / (30 * 24 * 3600))
+			correct += split_seq(it[2])
+		
+		def __to_dataset(data):
+			data = tf.ragged.constant(data)
+			data = tf.data.Dataset.from_tensor_slices(data)
+			data = data.map(lambda x: x)
+			return data
+
+		item = __to_dataset(item)
+		timestamp = __to_dataset(timestamp)
+		correct = __to_dataset(correct)
+
+		dataset = tf.data.Dataset.zip((item, timestamp, correct))
+        # dtype
+		dataset = dataset.map(lambda item, timestamp, correct: (tf.cast(item, dtype=tf.float32),tf.cast(timestamp, dtype=tf.float32), tf.cast(correct, dtype=tf.float32)))
+		# dim
+		dataset = dataset.map(lambda item, timestamp, correct: (tf.expand_dims(item, axis=-1),tf.expand_dims(timestamp, axis=-1), tf.expand_dims(correct, axis=-1), correct))
+		# concat
+		dataset = dataset.map(lambda item, timestamp, correct, label: (tf.concat([item, timestamp, correct], axis=-1), label))
+
+		dataset = dataset.padded_batch(batch_size,  drop_remainder=False)
+		return dataset
+
 	def loadAKTData(self, dataset_params):
 		trainRate = dataset_params["trainRate"]
 		batch_size = dataset_params["batch_size"]
@@ -76,10 +131,20 @@ class _DataProcessor:
 		problem_num = len(df['item_id'].unique())
 
 		item, timestamp, correct = list(), list(), list()
+
+
+		def split_seq(inputs, max_len=500):
+			seq_len = len(inputs)
+			subseq_num = seq_len // max_len + int(seq_len % max_len != 0)
+			subseq = list()
+			for i in range(subseq_num):
+				subseq.append(inputs[i*max_len:(i+1)*max_len])
+			return subseq
+
 		for it in data:
-                        item.append(it[0])
-                        timestamp.append(it[1] / (24 * 3600))
-                        correct.append(it[2])
+			item += split_seq(it[0])
+			timestamp += split_seq(it[1] / (24 * 3600))
+			correct += split_seq(it[2])
 		
 		def __to_dataset(data):
 			data = tf.ragged.constant(data)

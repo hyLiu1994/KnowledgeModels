@@ -170,8 +170,8 @@ class AKT(tf.keras.Model):
         correct = tf.squeeze(correct, axis=-1)
         item_one_hot = tf.one_hot(tf.cast(item, dtype=tf.int32), depth=self.problem_num)
         concept = tf.matmul(item_one_hot, self.Q)
-        self.mu_q = tf.reshape(self.mu_q, shape=(1, self.concept_num))
-        concept_mu_q = concept * self.mu_q
+        mu_q = tf.reshape(self.mu_q, shape=(1, self.concept_num))
+        concept_mu_q = concept * mu_q
         seq_concept_embed = tf.matmul(concept, self.c_embed)
         # mu_q_t @ d_c_t + C_c_t
         x = concept_mu_q @ self.d_embed + seq_concept_embed
@@ -231,6 +231,14 @@ class AKT(tf.keras.Model):
         grad = tape.gradient(loss, self.trainable_variables)
         self.opti.apply_gradients(zip(grad, self.trainable_variables))
 
+def get_last_epoch_data(model, dataset):
+    all_pred = list()
+    all_label = list()
+    model.resetMetrics()
+    for data, label in dataset:
+        pred = model.metrics_step(data, label)
+    return (model.metrics_acc.result(), model.metrics_pre.result(), model.metrics_rec.result(), 
+    model.metrics_auc.result(), model.metrics_mae.result(), model.metrics_rmse.result())
 @tf.function
 def test(model, dataset):
     for data, label in dataset:
@@ -269,7 +277,7 @@ def train(epoch, model, train_dataset, test_dataset):
                     "test_rmse: ", test_rmse)
             start = tf.timestamp()
 
-def runOJ(is_test=True):
+def runOJ(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -277,7 +285,7 @@ def runOJ(is_test=True):
     problemLC = [30, 1e9, 0, 1]
     # algebra08原始数据里的最值，可以注释，不要删
     low_time = "2018-06-01 00:00:00"
-    high_time = "2018-06-08 00:00:00"
+    high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./DataProcessor/data")
 
@@ -291,9 +299,9 @@ def runOJ(is_test=True):
 
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
-    dataset_params["batch_size"] = 32
-    print("===============Test===============")
-    [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData(dataset_params)
+    dataset_params["batch_size"] = 4
+    dataset_params["kFold"] = 5
+    [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData_5F(dataset_params, fold_id)
     Q_matrix = Q_matrix.toarray().astype(np.float32)
 
     #######################################
@@ -330,9 +338,9 @@ def runOJ(is_test=True):
 
     model_params.pop("metrics_path")
     model_params.pop("Q_matrix")
-    saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
+    # saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 
-def runKDD(is_test=True):
+def runKDD(fold_id, is_test=True):
     #######################################
     # LC parameters
     #######################################
@@ -340,12 +348,12 @@ def runKDD(is_test=True):
     problemLC = [30, 1e9]
     # algebra08原始数据里的最值，可以注释，不要删
     low_time = "2008-09-08 14:46:48"
-    high_time = "2008-10-08 00:00:00"
+    high_time = "2009-01-01 00:00:00"
     timeLC = [low_time, high_time]
     data_processor = _DataProcessor(userLC, problemLC, timeLC, 'kdd', TmpDir = "./DataProcessor/data")
 
     LCDataDir = data_processor.LCDataDir
-    saveDir = os.path.join(LCDataDir, 'DKT')
+    saveDir = os.path.join(LCDataDir, 'AKT')
     print("===================================")
     print("metrics save path: ", saveDir)
     print("===================================")
@@ -355,7 +363,8 @@ def runKDD(is_test=True):
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
     dataset_params["batch_size"] = 32
-    [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData(dataset_params)
+    dataset_params["kFold"] = 5
+    [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData_5F(dataset_params, fold_id)
     Q_matrix = Q_matrix.toarray().astype(np.float32)
 
     #######################################
@@ -390,8 +399,71 @@ def runKDD(is_test=True):
 
     model_params.pop("metrics_path")
     model_params.pop("Q_matrix")
-    saveDict(results, saveDir, 'results' + getLegend(model_params) + '.json')
+    #saveDict(results, saveDir, 'results' + getLegend(model_params) + '.json')
 
+def runAssist(fold_id, is_test=True):
+    #######################################
+    # LC parameters
+    #######################################
+    userLC = [10, 3000]
+    problemLC = [10, 3000]
+    #hdu原始数据里的最值，可以注释，不要删
+    low_time = "2012-09-01 00:00:00" 
+    high_time = "2012-09-30 00:00:00"
+    timeLC = [low_time, high_time]
+    data_processor = _DataProcessor(userLC, problemLC, timeLC, 'assist', TmpDir = "./DataProcessor/data")
+
+
+    LCDataDir = data_processor.LCDataDir
+    saveDir = os.path.join(LCDataDir, 'AKT')
+    print("===================================")
+    print("metrics save path: ", saveDir)
+    print("===================================")
+    prepareFolder(saveDir)
+    LC_params = data_processor.LC_params
+
+    dataset_params = copy.deepcopy(LC_params)
+    dataset_params["trainRate"] = 0.8
+
+    dataset_params["batch_size"] = 32
+    dataset_params['kFold'] = 5
+    [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData_5F(dataset_params, fold_id)
+    Q_matrix = Q_matrix.toarray().astype(np.float32)
+
+    #######################################
+    # model parameters
+    #######################################
+    model_params = {}
+    model_params['problem_num'] = Q_matrix.shape[0]
+    model_params['concept_num'] = Q_matrix.shape[1]
+    model_params['embed_dim'] = 20
+    model_params['epoch'] = 200
+    model_params['threshold'] = 0.5
+    model_params['metrics_path'] = saveDir + '/metrics.csv'
+    model_params["data_shape"] = [data for data, label in train_dataset.take(1)][0].shape.as_list()
+    model_params['Q_matrix'] = Q_matrix
+    model_params['num_head'] = 5
+
+
+    model = AKT(model_params)
+    if is_test:
+        train_dataset = train_dataset.take(10)
+        test_dataset = test_dataset.take(8)
+
+    #######################################
+    # train parameters
+    #######################################
+    train(epoch=model_params['epoch'], model=model, train_dataset=train_dataset, test_dataset=test_dataset)
+
+    #######################################
+    # save model
+    #######################################
+    results={'LC_params':LC_params, 'model_params':model_params,'results':{}}
+    temp = results['results']
+    [temp['tf_Accuracy'], temp['tf_Precision'], temp['tf_Recall'], temp['tf_AUC'], temp['tf_MAE'], temp['tf_RMSE']] = get_last_epoch_data(model, test_dataset)
+
+    model_params.pop("metrics_path")
+    #saveDict(results, saveDir, 'results'+ getLegend(model_params)+'.json')
 def set_run_eagerly(is_eager=False):
     if tf.__version__ == "2.2.0":
         tf.config.experimental_run_functions_eagerly(is_eager)
@@ -399,5 +471,7 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     tf.debugging.enable_check_numerics()
-    set_run_eagerly(True)
-    runOJ(is_test=True)
+    set_run_eagerly(False)
+    #runAssist(0, False)
+    runKDD(0, False)
+    runOJ(0, False)
