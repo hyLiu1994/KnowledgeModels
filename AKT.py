@@ -46,7 +46,11 @@ class Encoder(tf.keras.layers.Layer):
         x = 1 - x
         diag_timestamp = tf.expand_dims(tf.linalg.diag_part(timestamp), axis=-1)
         d_t = diag_timestamp - timestamp
-        d = x * tf.cast(d_t, dtype=tf.float32) * low_tri
+        
+        d_t = d_t * low_tri
+        d_t = tf.cast(d_t > 0, dtype=tf.float32) * d_t
+        tf.print("xxxxx", tf.reduce_min(d_t),tf.reduce_max(d_t), sep=',', output_stream='file://./DataProcessor/data/LCData/hdu_U_[30,3600,0.1,T]_P_[30,1e9,F,T]_T_[2018-06-01 00-00-00,2018-11-29 00-00-00]_R_T_D_T/AKT' + "/value_range.csv")
+        d = x * d_t
         return d
 
     def get_tri_mask(self, seq_len):
@@ -56,15 +60,19 @@ class Encoder(tf.keras.layers.Layer):
     def attention(self, Q, K, V, timestamp):
         timestamp = tf.expand_dims(timestamp, axis=-2)
         timestamp = tf.tile(timestamp, multiples=[1, tf.shape(timestamp)[-1], 1])
-        exp_x = tf.divide(tf.matmul(Q, K, transpose_b=True), tf.sqrt(tf.cast(self.dim, dtype=tf.float32)))
-        x = tf.keras.activations.softmax(exp_x)
-        seq_len = tf.shape(x)[-1]
+        seq_len = tf.shape(Q)[-2]
         low_tri = self.get_tri_mask(seq_len)
+        exp_x = tf.divide(tf.matmul(Q, K, transpose_b=True), tf.sqrt(tf.cast(self.dim, dtype=tf.float32)))
+        # avoid -inf
+        exp_x = exp_x * low_tri + (-1e9) * (1 - low_tri)
+        x = tf.keras.activations.softmax(exp_x)
         x = x * low_tri
         # normalize
         x = tf.math.divide_no_nan(x, tf.reduce_sum(x, axis=-1, keepdims=True))
         d = self.time_factor(x, timestamp, low_tri)
-        s = exp_x * tf.exp(-1 * self.theta * self.theta * d)
+        
+        a1 = tf.exp(-1 * self.theta * self.theta * d)
+        s = exp_x * a1
         a = tf.keras.activations.softmax(s)
         a = a * low_tri
         # normalize
@@ -299,7 +307,7 @@ def runOJ(fold_id, is_test=True):
 
     dataset_params = copy.deepcopy(LC_params)
     dataset_params["trainRate"] = 0.8
-    dataset_params["batch_size"] = 4
+    dataset_params["batch_size"] = 32
     dataset_params["kFold"] = 5
     [train_dataset, test_dataset, Q_matrix] = data_processor.loadAKTData_5F(dataset_params, fold_id)
     Q_matrix = Q_matrix.toarray().astype(np.float32)
@@ -471,7 +479,8 @@ def set_run_eagerly(is_eager=False):
         tf.config.run_functions_eagerly(is_eager)
 if __name__ == "__main__":
     tf.debugging.enable_check_numerics()
-    set_run_eagerly(False)
+    set_run_eagerly(True)
     #runAssist(0, False)
-    runKDD(0, False)
-    runOJ(0, False)
+    #runKDD(0, False)
+    runOJ(0, True)
+    
