@@ -83,8 +83,8 @@ class _DataProcessor:
 		
 
 	def df2dataset_AKT(self, df, StaticInformation, batch_size):
-		data = df.groupby('user_id').apply(lambda r: (r['item_id'].values, r['timestamp'].values, r['correct'].values))
 		df['item_id'] = df['item_id'] + 1
+		data = df.groupby('user_id').apply(lambda r: (r['item_id'].values, r['timestamp'].values, r['correct'].values))
 		problem_num = len(df['item_id'].unique())
 
 		item, timestamp, correct = list(), list(), list()
@@ -98,7 +98,7 @@ class _DataProcessor:
 
 		for it in data:
 			item += split_seq(it[0])
-			timestamp += split_seq(it[1] / (30 * 24 * 3600))
+			timestamp += split_seq(it[1] / (6 * 30 * 24 * 3600))
 			correct += split_seq(it[2])
 		
 		def __to_dataset(data):
