@@ -473,15 +473,14 @@ class _DataProcessor:
 		return sparse_df, length
 
 
-
+'''
 userLC = [10,30,0,1]
 problemLC = [10,30,0,1]
 #hdu原始数据里的最值，可以注释，不要删
 low_time = "2018-06-01 00:00:00" 
 high_time = "2018-11-29 00:00:00"
 timeLC = [low_time, high_time]
-a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")                                                                                                   
- 
+a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "../data")
 Features = {}
 Features['users'] = True
 Features['items'] = True
@@ -521,7 +520,7 @@ print(sparse_df.shape)
 printDict(Length)
 print('**************statics**************')
 printDict(a.dataprocessor.LC_params)
-
+'''
 
 
 

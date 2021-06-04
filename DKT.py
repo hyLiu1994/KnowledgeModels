@@ -20,18 +20,24 @@ class DKT(tf.keras.Model):
         self.problem_num = problem_num
         self.data_shape = data_shape
         self.problem_embedding = layers.Embedding(input_dim=(problem_num) * 2 + 1, output_dim=problem_embed_dim, mask_zero=True)
-        self.lstm = layers.LSTM(lstm_units, return_sequences=True, dropout=dropout, recurrent_regularizer=tf.keras.regularizers.l2(l2), bias_regularizer=tf.keras.regularizers.l2(l2))
-        self.dense = layers.Dense(units=problem_num, kernel_regularizer=tf.keras.regularizers.l2(l2), bias_regularizer=tf.keras.regularizers.l2(l2), activation=tf.keras.activations.sigmoid)
-
+        self.lstm = layers.LSTM(lstm_units, return_sequences=True,
+                                dropout=dropout, recurrent_regularizer=tf.keras.regularizers.l2(l2),
+                                bias_regularizer=tf.keras.regularizers.l2(l2))
+        self.dense = layers.Dense(units=problem_num,
+                                  kernel_regularizer=tf.keras.regularizers.l2(l2),
+                                  bias_regularizer=tf.keras.regularizers.l2(l2),
+                                  activation=tf.keras.activations.sigmoid)
         # train
         self.opti = tf.keras.optimizers.Adam()
         self.loss_obj = tf.keras.losses.BinaryCrossentropy()
 
         # metrics
         self.metrics_loss = tf.keras.metrics.BinaryCrossentropy()
-        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy(threshold = threshold)
-        self.metrics_precision = tf.keras.metrics.Precision(thresholds = threshold)
-        self.metrics_recall = tf.keras.metrics.Recall(thresholds = threshold)
+        self.metrics_accuracy = tf.keras.metrics.BinaryAccuracy(
+            threshold=threshold)
+        self.metrics_precision = tf.keras.metrics.Precision(
+            thresholds=threshold)
+        self.metrics_recall = tf.keras.metrics.Recall(thresholds=threshold)
         self.metrics_mse = tf.keras.metrics.MeanSquaredError()
         self.metrics_mae = tf.keras.metrics.MeanAbsoluteError()
         self.metrics_rmse = tf.keras.metrics.RootMeanSquaredError()
@@ -39,7 +45,6 @@ class DKT(tf.keras.Model):
         self.metrics_auc_1000 = tf.keras.metrics.AUC(num_thresholds=1000)
 
     def call(self, inputs):
-        
         problem_embed = self.problem_embedding(inputs)
         hidden = self.lstm(problem_embed)
         pred = self.dense(hidden)
@@ -66,14 +71,13 @@ class DKT(tf.keras.Model):
         self.metrics_rmse.update_state(label, pred, mask)
         self.metrics_auc.update_state(label, pred, mask)
         self.metrics_auc_1000.update_state(label, pred, mask)
-
         return loss
 
     @tf.function(experimental_relax_shapes=True)
     def metrics_step(self, data, label):
         pred = self(data)
         self.loss_function(pred, label)
-   
+
     @tf.function(experimental_relax_shapes=True)
     def train_step(self, data, label):
         with tf.GradientTape() as tape:
@@ -92,13 +96,12 @@ class DKT(tf.keras.Model):
         self.metrics_rmse.reset_states()
         self.metrics_auc.reset_states()
         self.metrics_auc_1000.reset_states()
-        return 
+        return
 
     def save_trainable_weights(self, save_path="./dkt.model"):
         data = tf.zeros(shape=self.data_shape)
         self(data)
         saved_variable = [w.numpy() for w in self.trainable_variables]
-        
         fw = open(save_path, "wb")
         pickle.dump(saved_variable, fw)
         fw.close()
@@ -121,7 +124,9 @@ class DKT(tf.keras.Model):
 def test(model, dataset):
     for data, label in dataset:
         model.metrics_step(data, label)
-    tf.print("test loss: ", model.metrics_loss.result(), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result())
+    tf.print("test loss: ", model.metrics_loss.result(),
+             "acc: ", model.metrics_accuracy.result(),
+             "auc: ", model.metrics_auc.result())
     model.resetMetrics()
 
 @tf.function
@@ -129,7 +134,7 @@ def train(epoch, model, train_dataset, test_dataset):
     element_num = tf.data.experimental.cardinality(train_dataset)
     start = tf.timestamp()
     for i, (data, label) in train_dataset.repeat(epoch).enumerate():
-        # tf.print(i, element_num, len(data),"acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(),
+        # tf.print(i, element_num, len(data), "acc: ", model.metrics_accuracy.result(), "auc: ", model.metrics_auc.result(),
         # "pre: ", model.metrics_precision.result(), "recall: ", model.metrics_recall.result(), "rmse: ", model.metrics_rmse.result(), 
         # "mae: ", model.metrics_mae.result(), "mse: ", model.metrics_mse.result())
         model.train_step(data, label)
@@ -216,7 +221,7 @@ def runOJ():
     dropout = 0.01
     l2 = 0.01
     problem_embed_dim = 20
-    epoch = 1
+    epoch = 5000
     threshold = 0.5
 
     model_params = {}
@@ -234,13 +239,14 @@ def runOJ():
     #######################################
     # LC parameters
     #######################################
-    userLC = [10,500,0.1,1]
-    problemLC = [10,500,0,1]
-    #hdu原始数据里的最值，可以注释，不要删
-    low_time = "2018-06-01 00:00:00" 
+    userLC = [10, 500, 0.1, 1]
+    problemLC = [10, 500, 0, 1]
+    # hdu原始数据里的最值，可以注释，不要删
+    low_time = "2018-06-01 00:00:00"
+    low_time = "2018-11-22 00:00:00"
     high_time = "2018-11-29 00:00:00"
     timeLC = [low_time, high_time]
-    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir = "./data")
+    a = _DataProcessor(userLC, problemLC, timeLC, 'oj', TmpDir="./DataProcessor/data/")
 
     LCDataDir = a.LCDataDir
     saveDir = os.path.join(LCDataDir, 'dkt')
@@ -328,6 +334,7 @@ def runAssist():
 
     
 if __name__ == "__main__":
-    runAssist()
+    runOJ()
+    # runAssist()
 
 
