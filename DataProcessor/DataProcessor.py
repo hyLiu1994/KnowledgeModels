@@ -495,7 +495,8 @@ class _DataProcessor:
 		return sparse_df, dict_data
 
 
-	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_0kcsingle', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'wins_3das3h', 'wins_4das3hkc', 'wins_5das3hitems', 'fails_1kc', 'fails_2items', 'fails_3das3h', 'attempts_1kc', 'attempts_2items', 'attempts_3das3h', 'attempts_4das3hkc', 'attempts_5das3hitems']):
+	def loadSparseDF(self, active_features = ['skills'], window_lengths = [3600 * 1e19, 3600 * 24 * 30, 3600 * 24 * 7, 3600 * 24, 3600], all_features = ['users', 'items', 'skills', 'lasttime_1kc', 'lasttime_2items', 'lasttime_3sequence', 'interval_1kc', 'interval_2items', 'interval_3sequence', 'wins_1kc', 'wins_2items', 'fails_1kc', 'fails_2items', 'attempts_1kc', 'attempts_2items']):
+
 		"""Build sparse features dataset from dense dataset and q-matrix.
 
 		Arguments:
@@ -880,7 +881,7 @@ if __name__ == "__main__":
 	df_length, dict_data = a.getLengthDistribution(kFold)
     '''
 
-	'''
+    '''
 	Features = {}
 	Features['users'] = True #用于das3h中特征
 	Features['items'] = True #用于das3h中特征
@@ -914,7 +915,7 @@ if __name__ == "__main__":
 	#low_time = "2018-06-01 00:00:00" 
 	#high_time = "2018-11-29 00:00:00"
 
-	'''
+    '''
 	isTest = True
 	if isTest == True:
         userLC = [10, 500, 0.1, 1]
@@ -934,7 +935,7 @@ if __name__ == "__main__":
 	printDict(StaticInformation)
 	'''
 
-	'''
+    '''
 	isTest = True
     isAll = False
     if isTest == True:
@@ -961,11 +962,11 @@ if __name__ == "__main__":
 	printDict(StaticInformation)
 	'''
 
-	'''
+    '''
 	test loadSparseDF
 	'''
 
-	'''
+    '''
 	Features = {}
 	Features['users'] = False #用于das3h中特征
 	Features['items'] = False #用于das3h中特征

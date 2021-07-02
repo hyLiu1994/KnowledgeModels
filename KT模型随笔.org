@@ -1,0 +1,43 @@
+* 认知诊断与知识追踪区别与联系
+知识追踪（KT）任务本身按照技术进行分类的话
+可以大致分成三大类 基于因子分析的知识追踪 (FAKT) 基于概率图模型的知识追踪 (PGKT) 基于深度学习的知识追踪 (DLKT)
+1. FAKT 的代表模型比如是 IRT[1]、AFM[2]、PFA[3]、KTM[4] 和 DAS3H[5] 之类的 (利用特征工程提取人工特征)
+2. PGKT 的代表模型比如是 BKT[6]、KPT[7]、FuzzyCD[8] 之类的
+3. DLKT 的代表模型有
+    基于 LSTM
+        DKT[9], EERNN[12], EKT[13] 
+    基于记忆增强网络的
+        DKVMN[10], DKVMN-DT[16], DKVMN-CA[17]
+    基于注意力机制
+        SAKT[14], RKT[15], AKT[11]
+       
+认知诊断可以分为两类教育领域的认知诊断与计算机领域的认知诊断.
+教育领域的认知诊断, 需要与同学交互, 通过设计调查问卷与学生交互才能知道学生的知识状态。 (学生练习反馈过程, 我们通过设计调查问卷来识别学生的知识状态。 (*赵老师*))
+计算机领域的认知诊断, 仅仅需要学生的练习记录, 通过练习记录分析学生的知识状态。 (其模型一般是通过对学生练习反馈进行建模，进而预测学生的未来表现。 (*赵老师*))
+*随着认知诊断在计算机领域的不断发展， 其慢慢演变为了知识追踪任务, 其目的是区分与教育领域的认知诊断。*
+知识追踪最早的论文是这篇发表于1994年[6]论文的一作是 卡内基梅隆大学人机交互荣誉退休教授 Albert Corbett, 二作是 卡内基梅隆大学心理学教授 John R Anderson
+
+认知诊断（CD） 与 知识追踪 （KT）的区别主要如下:
+1. CD 模型都不考虑时序的， 而 KT 模型均考虑时序
+2. CD 主要是基于因子分析模型和非时序的概率图模型的
+3. KT 大部分都是序列模型 （基于 LSTM、记忆增强网络、隐马尔科夫模型这类序列模型提出的）；少量的FAKT 虽然是非序列模型，但也是考虑时序因素的，其是通过提取时序特征来考虑时序
+4. CD 更多的出现在偏向教育学的论文中 KT 更多的出现在偏向计算机的论文中 
+
+
+[1] Handbook of modern item response theory.
+[2] Learning factors analysis–a general method for cognitive model evaluation and improvement.
+[3] Performance factors analysis–a new alternative to knowledge tracing.
+[4] Knowledge tracing machines: Factorization machines for knowledge tracing.
+[5] DAS3H: modeling student learning and forgetting for optimally scheduling distributed practice of skills.
+[6] Knowledge tracing: Modeling the acquisition of procedural knowledge.
+[7] Tracking knowledge proﬁciency of students with educational priors.
+[8] Cognitive modelling for predicting examinee performance.
+[9] Deep knowledge tracing
+[10] Dynamic key-value memory networks for knowledge tracing.
+[11] Context-aware attentive knowledge tracing.
+[12] Exercise-Enhanced Sequential Modeling for Student Performance Prediction
+[13] EKT: Exercise-aware Knowledge Tracing for Student Performance Prediction
+[14] A Self-Attentive model for Knowledge Tracing
+[15] RKT : Relation-Aware Self-Attention for Knowledge Tracing
+[16] Muti-behavior Features based Knowledge Tracking using Decision Tree improved DKVMN
+[17] Concept-Aware Deep Knowledge Tracing and Exercise Recommendation in an Online Learning System

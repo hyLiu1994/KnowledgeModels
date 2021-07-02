@@ -1,0 +1,355 @@
+#+LATEX_HEADER:\usepackage{ctex}
+#+TITLE: Knowledge Tracing with Learning Transfer
+#+Author: hyliu
+* Knowledge Tracing with Learning Transfer
+** Introduction
+*** Background
+With the recent boom in development of Online Intelligent Education, such as Massive Open Online Courses(MOOC), Khan Academy, Online Judging System cite:anderson2014engaging,geigle2017modeling,zhao2018automatically and so on, a large number of applications based on Online Intelligent Education have rapidly moved into a place of prominence in the mind of the public, e.g., exercise recommendations, student performance prediction and learning path recommendation cite:DBLP:conf/edm/AiCGZWFW19,DBLP:conf/ijcai/WuLLCSCH15,DBLP:conf/kdd/LiuTLZCMW19.
+
+A key issue in such applications is the Knowledge Tracing of students, i.e., to capture students knowledge proficiency and understanding over time.
+**** 整体逻辑
+随着[[*%E5%BA%94%E7%94%A8%E9%A2%86%E5%9F%9F (%E9%AB%98%E5%B1%82%E6%AC%A1%E7%9A%84)][应用领域]]的不断发展, [[*%E5%BA%94%E7%94%A8%E9%9C%80%E6%B1%82 (%E4%BD%8E%E5%B1%82%E6%AC%A1%E7%9A%84)][应用需求]]不断地涌现。
+而知识追踪是应用需求们面临的核心问题。
+简单介绍下知识追踪。
+***** 应用领域 (高层次的)
+1. Online intelligent education
+   1. an extension of traditional classroom setting
+   2. Massive Open Online Courses (MOOC)
+   3. Khan Academy
+   4. Online Judging system
+2. intelligent tutoring system (ITS)
+***** 应用需求 (低层次的)
+1. Exercise Recommendations
+2. Student Performance Prediction
+3. Learning Path Recommendation
+***** 知识追踪定义 
+Knowledge tracing is the task of modeling student knowledge over time.
+
+*** Exit Work
+The existing knowledge tracing methods can be divided into three main categories: traditional knowledge tracing, knowledge tracing based data mining and knowledge tracing based on deep learning. Traditional knowledge tracing combines traditional education theory with Bayesian model, and usually uses hidden Markov model to track students knowledge proficiency, such as Bayesian Knowledge Tracing (BKT)cite:corbett1994knowledge and Temporal Item Response Theory (TIRT)cite:gonzalez2014general. Knowledge tracking based on data mining pays more attention to analyzing the data data generated during students learning process, and uses data mining algorithms such as matrix factorization cite:DBLP:conf/cikm/ChenLHWCWSH17, tensor factorization cite:DBLP:conf/sdm/XiongCHSC10, and probability graphic model cite:DBLP:conf/ijcai/WuLLCSCH15 to capture the latent factors of students over time. Knowledge tracking based on deep learning use Recurrent Neural Networks (RNNs) to model student learning, capture more complex representations of students knowledge cite:DBLP:conf/nips/PiechBHGSGS15 and makes full use of student learning records and the text of each problem cite:DBLP:conf/aaai/SuLLHYCDWH18.
+***** traditional KT
+简单介绍各类模型，参考其他文献写
+****** BKT (Bayesin Knowledge tracing)
+******* model student knowledge in a Hidden Markov Model
+****** TIRT 
+***** KT based on data mining
+简单介绍各类模型，参考其他文献写
+****** KPT
+****** FuzzyCDF
+***** KT based on deep learning
+简单介绍各类模型，参考其他文献写
+****** DKT
+****** EERNN
+****** DKVMN
+
+*** Motivation
+However, the above methods have a common problem, they have not considered the impact of learning transfer on knowledge tracking. 
+1. 传统教育学理论中概括化理论认为XXX
+2. 通过水下打靶实验严重了该理论
+3. 现有知识追踪模型从来没有考虑过学习迁移
+4. 考虑学习迁移的难点
+*** Our Model --- KTLT
+**** 模型流程
+***** 为了解决该问题
+***** 首先结合现有的教育学，以及knowledge tracing理论建模学生与题目的交互过程
+****** 不同于以往的知识追踪模型，我们将学生与知识点的关系分为了两个独立的层次---理解与掌握
+****** 理解了知识点表明学生明白了知识点背后的原理
+****** 掌握了知识点表明实际运用知识点
+***** 而后设计了一个可解释的概率模型通过考虑学习迁移来追踪学生知识点的掌握程度
+**** 创新点
+***** 本文提出了一个具有理论基础的学生建模框架
+***** 第一次将学习迁移理论应用于知识追踪
+***** 实验表明效果好
+**** 文章的整体结构
+** Related Work
+*** Knowledge Tracing
+*Knowledge Tracing.*
+Over the past years, many algorithms have been proposed for Knowledge Tracing. Most of them fall into three broad categories: traditional knowledge tracing, knowledge tracing based on data mining and knowledge tracing based on deep learning. The representative algorithms of traditional knowledge tracing are Bayesian Knowledge Tracing (BKT)cite:corbett1994knowledge and Temporal Item Response Theory (TIRT)cite:gonzalez2014general. BKT assumes that students knowledge proficiency is represented as a set of binary variables, where every knowledge is either mastered by the student or not, and models students knowledge proficiency in a Hidden Markov Model as a latent variable. TIRT incorporates forgetting factors into Item Response Theory (IRT)cite:drasgow1990item to track students knowledge proficiency. Knowledge tracing based on data mining includes KPT cite:DBLP:conf/cikm/ChenLHWCWSH17, FuzzyCDF cite:DBLP:conf/ijcai/WuLLCSCH15 and so on. KPT is an explanatory probabilistic method that tracks knowledge proficiency of students over time by leveraging educational priors(i.e., Q-matrix). FuzzyCDF combines fuzzy set theory and educational hypotheses to model students knowledge proficiency and predicts student performance by considering both slipping and guessing factors. Knowledge Tracing based on Deep Learning research works mainly include DKT cite:DBLP:conf/nips/PiechBHGSGS15, EERNN cite:DBLP:conf/aaai/SuLLHYCDWH18, DKVMN cite:DBLP:conf/www/ZhangSKY17 and so on. DKT is the first model that applies deep learning algorithms to knowledge tracing. DKT uses flexible recurrent neural networks that are 'deep' in time to track students knowledge proficiency. Since then EERNN based on DKT takes full advantage of both students learning records and the text of each problem. DKVMN applies Key-Value Memory Networks to exploit the relationship between underlying knowledge and directly output a student's knowledge proficiency.
+**** Traditional Knowledge Tracing
+**** 基于data mining的KT
+**** 基于deep learning的KT
+***** DKT
+****** 第一个将DL应用于
+***** EERNN
+****** 文本因素, 注意力机制
+***** DKVMN WWW-2017
+****** 第一个基于知识点建模的deep learning
+***** DL+IRT
+****** 与传统教育模型结合
+**** 内容不够可以添加
+***** 各个模型的优缺点
+***** 都没有考虑到学习迁移
+*** Learning Transfer
+ning Transfer (or Transfer of Learning) refers to learning in some context, then recombining some constituent elements or components in the original experience system, and adjusting the relationship between the components or establishing a new connection, to apply it to new situations. The original theory of learning transfer was identical elements theory cite:woodworth1901influence, which believes that one kind of learning can affect another kind of learning because the two have the same elements. Identical elements theory is based on Thorndike's Connectionism theory cite:hilgard1948thorndike, which is a psychological theory that puts forward based on experimental research on animals. However, Identical elements theory was soon attacked by general principle cite:judd1908relation. General principle holds that the main reason for learning transfer does not lie in the superficial similarity between tasks, but in whether a generalized understanding of the relevant knowledge is understanding. Judd confirmed the principle through "underwater shooting" experiment cite:judd1908relation. In "underwater shooting" experiment, two groups of boys practiced throwing darts at a target placed under about a foot of water. Only one group was taught refraction principle. When the target depth was reduced to four inches, the group that had been taught refraction principle adjusted rapidly to the change; the other group showed comparative difficulty in learning to hit the target at the shallower level.
+**** 介绍学习迁移, 最初是由XXX提出的
+**** 目的是为了反驳形式化理论
+**** XXX进行的实验证明 引用实验论文
+**** 而后概括化理论，反驳共同要素学说, 其中心思想
+**** XXX进行的实验证明 引用实验论文
+**** XXX得出的结论 
+** KTLT
+*** Problem Define
+为什么定义, 模型流程简要描述一遍，并对其符号化描述
+模型流程的符号化描述
+**** 具体内容
+Suppose there are $N$ students, $M$ problems and $K$ knowledge concepts in a learning system. In this system, students' exercise logs, as shown in Table \ref{table:ExampleOfExerciseLogs}, record that students exercise at different times. Students exercise response are represented as a tensor $R \in \mathbb{R}^{N\times M \times T}$ where $R_{ij}^t$ denotes student $i$'s response of problem $j$ at time $t$. In addition, we also have a Q-matrix which is represented as a binary matrix $Q \in \mathbb{R}^{M\times K}$. $Q_{jk} = 1$ means that problem $j$ relates to knowledge concept $k$ and vice versa. Without loss of generality, the problem can be formulated as:
+
+\vspace{1mm}
+\noindent *PROBLEM FORMULATION* /Given the students exercise response tensor $R$ and Q-matrix provided by educational experts, our goal is three-flod: (1) modeling the change of students knowledge proficiency and understanding for time $1$ and $T$; (2) predicting students knowledge proficiency and understanding at time $T+1$; (3) predicting students response at time $T+1$./
+**** Define Knowledge Tracing
+Given students’ response logs $R$ and the Q-matrix $Q$, the goal of Knowledge Tracing is to mine students’ mastery on knowledge concepts in each time windows $t$ through the student performance prediction process.
+**** Define PSP(Predict Student performance)
+为了量化Knowledge Tracing效果
+**** parameter Define
+|-----------------+--------------------------------------------------------------|
+| Notation        | Description                                                  |
+|-----------------+--------------------------------------------------------------|
+| N               | the total number of students                                 |
+| M               | the total number of problem                                  |
+| T               | the total number of time windows                             |
+| K               | the total number of knowledge concept                        |
+| $R_{ij}^{t}$    | the response of Student i on problem j in time window t      |
+| $\mu_{ij}^{t}$  | the student ability to problem solve                         |
+| $\theta_{ij}^t$ | the student mastery of problem                               |
+| $U_{i}^{t}$     | the knowledge proficiency of Student i in time window t      |
+| $\hat{U_i^t}$   | the student mastery of knowledge concept                     |
+| $D_{i}^{t}$     | the knowledge understanding of student i in time windows t   |
+| $V_{j}$         | the correlation level of problem j on each knowledge concept |
+| $S_{ij}$        | the correlation level between knowledge concept i and j      |
+|-----------------+--------------------------------------------------------------|
+
+*** 建模学生与题目交互(Modeling Students Exercise Response) 
+**** 理论依据
+***** Assume
+****** Assume 1 
+学生理解并熟练掌握AB知识点，那么学生大概率掌握与AB关联度较高的C知识点。
+******* 求学生知识点掌握程度
+根据以下信息求得:
+   1. 学生对于知识点的熟练度
+   2. 学生对于知识点的理解程度
+   3. 知识点之间的相关性
+******* 理论依据
+经验类化理论,贾德（Judd，1908）提出来的。 
+****** Assume 2
+For problem sets in which problems contain the same knowledge points, the higher students' mastery of knowledges concepts in sets, the better students' ability to do problems in sets.
+ 学生对于某种类型题目所包含知识点掌握程度越高, 那么学生答对某类题目的能力越强
+******* 求学生对于这类题目的能力
+根据以下信息求得:
+   1. 学生的知识掌握程度
+   2. 题目包含的知识点
+******* 理论依据
+先验知识经验, 不证自明
+
+****** Assume 3
++ 学生对于某道题目所属类型的能力越高
++ 题目越简单
++ 学生对于某道题目的掌握程度越高
+******* 求学生对某道题目的掌握程度
+根据以下信息求得:
+   1. 学生对于该类型题目的能力
+   2. 题目的难度
+******* 理论依据
+先验知识经验，IRT理论
+
+****** Assume 4
+学生在真实环境中的反应受到学生的猜测与失误的影响。
+******* 求学生在真实测试中做题情况
+根据以下信息求得:
+   1. 学生对于该题目的掌握程度
+   2. 学生的猜测率与失误率
+******* 理论依据
+先验知识经验
+slip and guess 相关论文
+
+**** 学生做题建模
+我们将学生做题过程建模为如图所示
+[图]
+
+*** Probabilistic Modeling with priors
+**** student response for problem
+Inspired by many existing works [[[file:~/Documents/File/Paper/PaperCite.org::*Tracking%20Knowledge%20Proficiency%20of%20Students%20with%20Educational%20Priors][KPT]] ,KPT'25, KPT'27, SlipAndGuess], for each student and each problem, we formalize Assume1, and model the response tensor $R$, as follow:
+\[ p(R|\mu,s,g) = \prod\limits_{ t = 1 }^ { T } \prod\limits_{ i = 1 }^ { N } \prod\limits_{ j = 1 }^ { M } [ \mathcal{N} (R_{ij}^t| (1-s_j)\mu_{ij}^t + g_j(1-\mu_{ij}^t) , \sigma_R^2 )]^{I_{ij}^t} \] 
+where $\mathcal{N} \left( \mu, \sigma^2 \right)$ is a Gaussian distribution with mean $\mu$ and variance $\sigma^2$, $s_j$ and $g_j$ denote the slip and guess factors of problem $j$. 
+$I$ is an indicator tensor and $I_{ij}^t$ equals to 1 if student $i$ does problem $j$ in time windows $t$, and vice versa.
+**** student mastery for problem
+Formally, following an IRT-like high-order logistic model[[[file:~/Documents/File/Paper/PaperCite.org::*Cognitive%20Modelling%20for%20Predicting%20Examinee%20Performance][CMPEP]]], $\mu_{ij}$ is defined as:
+\[  \mu_{ij}^t  =  \frac{1}{1+exp \left[ -1.7 a_j (\theta_{ij}^t - b_j) \right]}    \]
+The implication of this definition is that the mastery of an student $i$ on the problem $j$ ($\mu_{ij}$) depends on the difference between the student ability for problem ($\theta_{ij}$) and the properties of the problem: difficulty ($b_j$) and discrimination ($a_j$) of problem $j$. 
+**** student ability to problem solve
+\[ \theta^t = \hat{U^t} * V \]
+\[ \hat{U_{ij}^t} = U_{ij}^t + \sum_{k!=j}{U_{ik}^t * S_{kj} * D_{ik}^t} \]
+**** Modeling U
+The essence of knowledge tracking is to track the dynamic change of students' knowledge proficiency. 
+(XYZ: Modeling U转折较为生硬)
+
+ Therefore, inspired by many existing works [[[file:~/Documents/File/Paper/PaperCite.org::*Tracking%20Knowledge%20Proficiency%20of%20Students%20with%20Educational%20Priors][KPT]]], we combine the /Learning curve/[KPT'2] and /Ebbinghaus forgetting curve/[KPT'28] as priors to model $U$ as: (XYZ：这句话还需要再改进下的说)
+\[ p(U|\sigma_U^2,\sigma_{U_1}^2) = \prod\limits_{ i=1 }^ { N } \mathcal{N}(U_i^1|0,\sigma_{U_1}^2I) \prod\limits_{ t = 2  }^ { T  } \mathcal{N}(U_i^t| \bar {U_i^t}, \sigma_U^2I) \] 
+\[ \bar{U_{ik}^t} = \alpha_i^Ul^t_U(*) + (1-\alpha_i^U)f^t_U(*),s.t. \quad 0 \le \alpha_i \le 1 \]
+
+where $U_i^t$ is the knowledge proficiency of student $i$ in time window $t$ which follows a Gaussian distribution with mean $\bar{U_i^t}$ and variance $\sigma_U^2I$, $U_i^1$ follows a zero-mean Gaussian distribution, $l^t(*)$ is the learning factor, $f^t(*)$ is the forgetting factor and $\alpha_{i}$ balances the two factors to capture the students' learning characteristics. 
+
+$l^t_U(*)$ and $f^t_U(*)$ are defined as following.
+\[ l^t_U (*) = U_{ik}^{t-1}\frac{G*f_k^t}{f_k^t+r} \]
+\[ f^t_U (*) = U_{ik}^{t-1} e^{-\frac{\Delta t}{P}} \]
+where $\Delta t$ is the time interval between neighbouring time windows, $r$, $G$ and $P$ are hyper-parameters.
+
+**** Modeling D
+\[ p(D|\sigma_D^2,\sigma_{D_1}^2) = \prod\limits_{ i=1 }^ { N } \mathcal{N}(D_i^1|0,\sigma_{D_1}^2I) \prod\limits_{ t = 2  }^ { T  } \mathcal{N}(D_i^t| \bar {D_i^t}, \sigma_D^2I) \] 
+\[ \bar{D_{ik}^t} = \alpha_i^Dl^t_D(*) + (1-\alpha_i^D)f^t_D(*),s.t. \quad 0 \le \alpha_i \le 1 \]
+\[ l^t_D (*) = D_{ik}^{t-1}\frac{G*f_k^t}{f_k^t+r} \]
+\[ f^t_D (*) = D_{ik}^{t-1} e^{-\frac{\Delta t}{P}} \]
+**** Modeling V
+Many existing works [[[file:~/Documents/File/Paper/PaperCite.org::*Problem-Enhanced%20Sequential%20Modeling%20for%20Student%20Performance%20Prediction][EERNN]] ,[[file:~/Documents/File/Paper/PaperCite.org::*Deep%20Knowledge%20Tracing][DKT]]] suffer from the interpretation problem as the learned latent dimensions are unexplainable.
+
+(XYZ:锦上添花: 这个位置可以扩充内容)
+To address this challenge, we model $V$ with the Q-matrix prior[[[file:~/Documents/File/Paper/PaperCite.org::*Tracking%20Knowledge%20Proficiency%20of%20Students%20with%20Educational%20Priors][KPT]]] as follows:
+\[ ln P(V|Q)=ln \prod\limits_{ (j,q,p) } p(>_j^+ | V)p(V) \]
+\[=\prod\limits_{ j=1 }^ { M } \prod\limits_{ q=1 }^ { K } \prod\limits_{ p=1 }^ { K } I(q>_j^+p)ln \frac{1}{1+e^{-1(V_{jq}-V_{jp})}} - \frac{1}{2\sigma_V^2} || V || _F^2 \]
+where $V$ follows a zero-mean Gaussian prior, $I(q>_j^+p)$ is an indicator matrix and $I(q>_j^+p)$ equals to 1 if $q>_j^+p$, and vice versa. 
+
+As for problem $j$, the partial order $>_j^+$ can be defined as:
+\[ q >_j^+ p, \quad if \quad Q_{jq}=1 \quad and \quad Q_{jp} = 0. \]
+*** Model Learning and Prediction
+**** Loss Function
+\[p\left(U, V, \alpha, b, s, g | R, Q\right) \propto p(R | U, V, \alpha, b) \times p\left(U | \sigma_{U}^{2}, \sigma_{U 1}^{2}\right) \times p\left(V | Q\right)\]
+\[ \hat{R_{ij}^t} = (1 - s_j - g_j) \frac{1}{1+exp \left[ -1.7 a_j (\hat{U_i^t} V_j - b_j) \right]} + g_j \]
+
+\[ \begin{array}{l}{\min _{\Phi} \mathcal{E}(\Phi)=\frac{1}{2} \sum\limits_{t=1}^{T} \sum\limits_{i=1}^{N} \sum\limits_{j=1}^{M} I_{i j}^{t}\left[\hat{R}_{i j}^{t}-R_{i j}^{t}\right]^{2}} \\
+ {-\lambda_{P} \sum\limits_{j=1}^{M} \sum\limits_{q=1}^{K} \sum\limits_{p=1}^{K} I\left(q>_{j}^{+} p\right) \ln \frac{1}{1+\mathrm{e}^{-\left(V_{j q}-V_{j p}\right)}}+\frac{\lambda_{V}}{2} \sum\limits_{i=1}^{M}\left\|V_{i}\right\|_{F}^{2}} 
+\\ {+\frac{\lambda_{U}}{2} \sum\limits_{t=2}^{T} \sum\limits_{i=1}^{N}\left\|\overline{U_{i}^{t}}-U_{i}^{t}\right\|_{F}^{2}+\frac{\lambda_{U 1}}{2} \sum\limits_{i=1}^{N}\left\|U_{i}^{1}\right\|_{F}^{2} + \frac{\lambda_{S}}{2} \sum\limits_{i=1}^{K}\left\|S_{i}\right\|_{F}^{2}
+\\ {+\frac{\lambda_{D}}{2} \sum\limits_{t=2}^{T} \sum\limits_{i=1}^{N}\left\|\overline{D_{i}^{t}}-D_{i}^{t}\right\|_{F}^{2}+\frac{\lambda_{D 1}}{2} \sum\limits_{i=1}^{N}\left\|D_{i}^{1}\right\|_{F}^{2}}\end{array}\]
+**** predict T+1
+\[ U_{ik}^{t+1} = \alpha_i^Ul^{t+1}_U(*) + (1-\alpha_i^U)f^{t+1}_U(*) \]
+\[ l^{t+1}_U(*) = U_{ik}^{t}\frac{G*f_k^{t}}{f_k^{t}+r} \]
+\[ f^{t+1}_U(*) = U_{ik}^{t} e^{-\frac{\Delta t}{P}} \]
+
+\[ D_{ik}^{t+1} = \alpha_i^Dl^{t+1}_D(*) + (1-\alpha_i^D)f^{t+1}_D(*) \]
+\[ l^{t+1}_D(*) = D_{ik}^{t}\frac{G*f_k^{t}}{f_k^{t}+r} \]
+\[ f^{t+1}_D (*) = D_{ik}^{t} e^{-\frac{\Delta t}{P}} \]
+
+\[ \theta^t = \hat{U^t} * V \]
+\[ \hat{U_{ij}^t} = U_{ij}^t + \sum_{k!=j}{U_{ik}^t * S_{kj} * D_{ik}^t} \]
+
+\[ \hat{R_{ij}^t} = (1 - s_j - g_j) \frac{1}{1+exp \left[ -1.7 a_j (\hat{U_i^t} V_j - b_j) \right]} + g_j \]
+
+** Experiment 
+*** Baseline Approaches
+*** Dataset Description
+**** hdu OnlineJudge Dataset
+**** poj OnlineJudge Dataset
+*** Metric Method
+**** Students' Responses Prediction
+MAE,RMSE
+*** Result
+**** compare with other methods
+4 figure
+**** compare with methods without sampling 
+4 figure
+**** compare with without understanding
+4 figure
+
+** Conclusion 
+** Conception List
+*** 名词实体
+1. Student 学生 $i$ 
+2. Problem 题目 $j$
+3. knowledge concepts 知识概念
+*** student-knowledge
+1. the student mastery of knowledge concept $\hat{U_{i}^t}$
+2. the student proficiency in knowledge concept $U_{i}^t$
+3. the student knowledge understanding degree in knowledge concept $D_{i}^t$
+*** student-problem
+1. the student response to problem $R_{ij}^t$
+2. the student ability to problem solve $\mu_{ij}^{t}$
+3. the student mastery of problem  $\theta_{ij}^t$
+*** knowledge-knowledge 
+1. the correlation matrix between knowleges concepts $S$
+1. the learning transfer rate between knowledge concepts $S$
+*** problem-knowledge 
+1. the correlation level of problem on knowledge concept $V$
+*** problem 
+1. the slip factor of problem j $s_{j}$
+2. the guess factor of problem j $g_{i}$
+3. the difficulty of problem j $b_{j}$
+4. the discrimination of problem j $a_{j}$
+** 思路整理
+*** 构架 
+|-------------------|
+| examinee          |
+| knowledge concept |
+| problem           |
+|-------------------|
+
+|-------------+-----------------------------------------------------------|
+| word        | description                                               |
+|-------------+-----------------------------------------------------------|
+| proficiency | the examinee's proficiency of a special knowledge concept |
+| mastery     | the examinee's mastery of a special knowledge concept     |
+| grasp       | the grasp of an examinee i on a special knowledge concept |
+| ability     | the examinee's ability for problem                        |
+| mastery     | the mastery of an examinee i on the problem j             |
+| response    | examinee's response for problem                           |
+|-------------+-----------------------------------------------------------|
+
+知识点概念的相关性 
+the correlation between knowledge concepts. 
+Knowledge concept relevance
+*** 学生做题建模
+**** 前提
+1. 已知学生对于知识点的熟练度
+2. 已知学生对于知识点的掌握程度
+3. 已知学生失误率与猜测率(考虑猜测和失误的情况)
+4. 已知题目所包含的知识点
+5. 已知题目难度
+6. 已知知识点之间的相关性（简单点的可以是先序后序关系）
+***** 需要从真实环境中获取的数据
+1. 学生的做题记录
+2. 题目所包含的知识点信息
+除了以上信息，其它可以已知信息可以训练得到
+**** 学生做题建模
+***** 求学生知识点掌握程度
+根据以下信息求得:
+   1. 学生对于知识点的熟练度
+   2. 知识点之间的相关性
+依据:
+   学生可能C知识点熟练度不高，但是A知识点与B知识点熟练度高，AB知识点与C知识点关联度较高
+   那么该学生对于C知识点的掌握程度也就较高
+
+***** 求学生对于这类题目的能力
+根据以下信息求得:
+   1. 学生的知识掌握程度
+   2. 题目包含的知识点
+
+***** 求学生对某道题目的掌握程度
+根据以下信息求得:
+   1. 学生对于该类型题目的能力
+   2. 题目的难度
+***** 求学生在真实测试中做题情况
+根据以下信息求得:
+   1. 学生对于该题目的掌握程度
+   2. 学生的猜测率与失误率
+
+*** 模型整体描述
+**** SlipAndGuess 描述
+可以借鉴这篇论文，查找inspired
+[[file:~/Documents/File/Paper/PaperCite.org::*Cognitive%20Modelling%20for%20Predicting%20Examinee%20Performance][Cognitive Modelling for Predicting Examinee Performance]]
+
+*** ideal
+**** slip and guess 改进
+slip and guess 参数的计算可否综合考虑到"学生知识点熟练度"、"题目包含的知识点"以及"题目难度"来综合判断
+
+如果进行这个改进的理论支撑:
+[[file:~/Documents/File/Paper/PaperCite.org::*Problem-Enhanced%20Sequential%20Modeling%20for%20Student%20Performance%20Prediction][Psychological results claim that student problem performances depend on the student states and problem characteristics (DiBello, Roussos, and Stout 2006).]]
+
+**** 能否把能力与知识的区分融入到框架中 
+ [2019-09-09 Mon 09:54]
+
+**** 将模糊理论融入到V矩阵的设计中
+**** 积件系统(知识之间的相关性理论基础)
+模型, 把知识点打碎
+1. 积件自己定义
+2. 积件与知识概念之间的关系
+** References
+bibliography:~/Documents/File/WorkWorkWork/KnowledgeTracingWithLearningTransfer/KTLT_REF.bib
+bibliographystyle:IEEEtran
+

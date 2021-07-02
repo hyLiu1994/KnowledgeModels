@@ -15,7 +15,6 @@ sys.path.append("./DataProcessor/")
 
 from public import *
 from DataProcessor import _DataProcessor
-  
 
 # Location of libFM's compiled binary file
 os.environ['LIBFM_PATH'] = '~/libfm/bin/'
@@ -126,13 +125,13 @@ def DAS3H(a, active, tw, isKfold, model_params):
 
 			for metric in metrics2:
 				temp[metric] = metrics2[metric](y_test, (y_pred_test>0.5).astype(int))
-				
+
 			for metric in metrics_tf1:
 				m = metrics_tf1[metric]
 				m.reset_states()
 				m.update_state(y_test, tf.greater_equal(y_pred_test,0.5))
 				temp[metric] = m.result().numpy()
-				
+
 			for metric in metrics_tf2:
 				m = metrics_tf2[metric]
 				m.reset_states()
@@ -161,13 +160,13 @@ def DAS3H(a, active, tw, isKfold, model_params):
 
 		for metric in metrics2:
 			temp[metric] = metrics2[metric](y_test, (y_pred_test>0.5).astype(int))
-				
+
 		for metric in metrics_tf1:
 			m = metrics_tf1[metric]
 			m.reset_states()
 			m.update_state(y_test, tf.greater_equal(y_pred_test,0.5))
 			temp[metric] = m.result().numpy()
-				
+
 		for metric in metrics_tf2:
 			m = metrics_tf2[metric]
 			m.reset_states()
@@ -236,12 +235,10 @@ def runKDD(datasetName, isTest = True, isAll = False, TmpDir = "./data"):
 			timeLC = [low_time, high_time]
 
 	a = _DataProcessor(userLC, problemLC, timeLC, 'kdd', datasetName = datasetName, TmpDir = TmpDir)
-
 	return a
 
 
 def runOJ(datasetName = 'hdu', isTest = True, isAll = False, TmpDir = "./data"):
- 
 	#######################################
 	# LC parameters
 	#######################################
@@ -303,7 +300,7 @@ if __name__ == "__main__":
 	Features['wins'] = True
 	Features['fails'] = False
 	Features['attempts'] = True
-	
+
 	Features2 = {}
 	Features2['tw_kc'] = True
 	Features2['tw_items'] = False
@@ -330,7 +327,6 @@ if __name__ == "__main__":
 		'iter': 300,
 		'active_features': features_suffix
 	}
- 
 
 	# FM parameters
 	FM_params = {
@@ -354,7 +350,7 @@ if __name__ == "__main__":
 	#a = runAssist(isTest = True, isAll = False, TmpDir = TmpDir)
 
 	a.getExtraStatics()
-	
+
 	'''
 	#IRT
 	active_features = ['users', 'items']
@@ -368,7 +364,7 @@ if __name__ == "__main__":
 		'iter': 300,
 		'active_features': features_suffix
 	}
- 
+
 	FM_params = {
 		'task': 'classification',
 		'num_iter': model_params['iter'],
@@ -391,7 +387,7 @@ if __name__ == "__main__":
 		'iter': 300,
 		'active_features': features_suffix
 	}
- 
+
 	FM_params = {
 		'task': 'classification',
 		'num_iter': model_params['iter'],
@@ -472,8 +468,6 @@ if __name__ == "__main__":
 			results = DAS3H(a, active_features, tw, isKfold, model_params)
 			printDict(results['results'])
 
-	
-	
 	#DASH
 	active_features = ['users', 'items', 'wins', 'attempts']
 	features_suffix = 'uiwat2'

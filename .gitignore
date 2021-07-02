@@ -1,5 +1,6 @@
 DataProcessor/.DS_Store
 DataProcessor/utils/__pycache__/*
+DataProcessor/utils/.DS_Store
 DataProcessor/data/
 DataProcessor/__pycache__/
 DataProcessor/utils/__pycache__/
